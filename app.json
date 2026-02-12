@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "마이발레",
+    "slug": "ballet-prj-rn",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "myballet",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "kr.co.myballet.app",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSExceptionDomains": {
+            "www.myballet.co.kr": { "NSExceptionAllowsInsecureHTTPLoads": false },
+            "localhost": { "NSExceptionAllowsInsecureHTTPLoads": true }
+          }
+        }
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "kr.co.myballet.app",
+      "usesCleartextTraffic": true
+    },
+    "plugins": ["expo-notifications"]
+  }
+}

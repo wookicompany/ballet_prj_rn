@@ -1,0 +1,38 @@
+{
+  "name": "ballet-prj-rn",
+  "version": "1.0.0",
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~5.0.5",
+    "@react-navigation/native": "^7.0.0",
+    "@react-navigation/native-stack": "^7.0.0",
+    "expo": "^53",
+    "expo-haptics": "~14.1.4",
+    "expo-linking": "~7.1.7",
+    "expo-notifications": "~0.31.5",
+    "expo-status-bar": "~2.2.3",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-native": "0.79.6",
+    "react-native-safe-area-context": "5.4.0",
+    "react-native-screens": "~4.11.1",
+    "react-native-web": "^0.20.0",
+    "react-native-webview": "13.13.5"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.0",
+    "@types/react": "~19.0.10",
+    "typescript": "~5.8.3"
+  },
+  "private": true,
+  "overrides": {
+    "react": "19.0.0",
+    "react-native": "0.79.6"
+  }
+}
