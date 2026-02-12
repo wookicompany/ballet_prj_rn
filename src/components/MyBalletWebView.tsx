@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { WEBVIEW_ORIGIN } from '../constants/config';
 import { openExternalUrl } from '../services/linking';
@@ -58,6 +58,9 @@ export function MyBalletWebView({
         domStorageEnabled
         sharedCookiesEnabled
         originWhitelist={['https://*', 'http://*']}
+        {...(Platform.OS === 'android' && {
+          mixedContentMode: 'compatibility' as const,
+        })}
       />
     </View>
   );
