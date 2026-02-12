@@ -22,11 +22,15 @@ type ForegroundNotification = { title?: string; body?: string; link?: string } |
 
 export function WebViewScreen() {
   const { url, setUrl } = useWebViewUrl();
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [canGoBack, setCanGoBack] = useState(false);
   const [foregroundNotification, setForegroundNotification] = useState<ForegroundNotification>(null);
   const webViewRef = useRef<WebView>(null);
-  const onMessage = useHapticMessage();
-  useFcmToken(null);
+  const handleAuthToken = useCallback((token: string) => {
+    setAccessToken((prev) => (prev === token ? prev : token));
+  }, []);
+  const onMessage = useHapticMessage({ onAuthToken: handleAuthToken });
+  useFcmToken(accessToken);
 
   const onNavigationStateChange = useCallback((nav: { canGoBack?: boolean }) => {
     setCanGoBack(nav.canGoBack ?? false);

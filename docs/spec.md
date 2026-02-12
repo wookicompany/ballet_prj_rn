@@ -44,7 +44,9 @@
 - **URL:** `POST /api/profile/fcm-token`
 - **Headers:** `Authorization: Bearer <Supabase access_token>`
 - **Body:** `{ "fcm_token": "<FCM device token>" }`
-- RN: Supabase에서 `session.access_token` 획득 후 위 스펙으로 호출.
+- RN: 로그인 이후 유효한 `access_token`을 확보해 위 스펙으로 호출.
+- 웹 배포 기준 postMessage는 현재 `type: 'haptic'`만 배포됨.
+- `auth_token` 전달은 웹에서 추가 배포되면 RN이 수신해 토큰 등록 호출에 사용.
 
 ### 3. 딥링크 앱 스킴
 
@@ -63,7 +65,7 @@
 | 로그인 | WebView 내 OAuth, RN 토큰 전달 불필요 |
 | 백 버튼 | WebView `goBack()` 우선, 없으면 앱 네비 |
 | 외부 링크 | 같은 도메인만 WebView, 그 외·tel·mailto는 브라우저/앱 |
-| postMessage | 웹→RN `type: 'haptic'` → expo-haptics |
+| postMessage | 웹→RN `type: 'haptic'` 배포 완료, `type: 'auth_token'`은 토큰 등록 연동용으로 추가 예정 |
 | 푸시 | expo-notifications, 알림 탭 시 `data.link` 로 WebView URL 변경 |
 | 딥링크 | 스킴 **myballet://** |
 
