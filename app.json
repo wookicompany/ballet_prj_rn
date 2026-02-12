@@ -31,8 +31,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "kr.co.myballet.app",
-      "usesCleartextTraffic": true
+      "package": "kr.co.myballet.app"
     },
     "plugins": ["expo-notifications"]
   }
