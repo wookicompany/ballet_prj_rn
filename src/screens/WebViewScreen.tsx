@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, Platform, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import { MyBalletWebView } from '../components/MyBalletWebView';
 import { NotificationBanner } from '../components/NotificationBanner';
@@ -89,28 +90,34 @@ export function WebViewScreen() {
   }, [canGoBack]);
 
   return (
-    <View style={styles.container}>
-      {foregroundNotification ? (
-        <NotificationBanner
-          title={foregroundNotification.title}
-          body={foregroundNotification.body}
-          link={foregroundNotification.link}
-          onPress={handleBannerPress}
-          onDismiss={() => setForegroundNotification(null)}
+    <View style={styles.wrapper}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
+        {foregroundNotification ? (
+          <NotificationBanner
+            title={foregroundNotification.title}
+            body={foregroundNotification.body}
+            link={foregroundNotification.link}
+            onPress={handleBannerPress}
+            onDismiss={() => setForegroundNotification(null)}
+          />
+        ) : null}
+        <MyBalletWebView
+          key={url}
+          url={url}
+          webViewRef={webViewRef}
+          onMessage={onMessage}
+          onNavigationStateChange={onNavigationStateChange}
         />
-      ) : null}
-      <MyBalletWebView
-        key={url}
-        url={url}
-        webViewRef={webViewRef}
-        onMessage={onMessage}
-        onNavigationStateChange={onNavigationStateChange}
-      />
+      </SafeAreaView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
   container: {
     flex: 1,
   },
