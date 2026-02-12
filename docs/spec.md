@@ -64,7 +64,7 @@
 | URL / 진입 | 기본 `https://www.myballet.co.kr/calendar`, 푸시·딥링크 시 payload `link` 로드 |
 | 로그인 | WebView 내 OAuth, RN 토큰 전달 불필요 |
 | 백 버튼 | WebView `goBack()` 우선, 없으면 앱 네비 |
-| 외부 링크 | 같은 도메인만 WebView, 그 외·tel·mailto는 브라우저/앱 |
+| 외부 링크 | OAuth 허용 도메인(`myballet`, `supabase`, `kakao`)은 WebView 유지, Google OAuth(`accounts.google.com`)는 정책상 외부 브라우저로 처리, 그 외·tel·mailto는 브라우저/앱 |
 | postMessage | 웹→RN `type: 'haptic'` 배포 완료, `type: 'auth_token'`은 토큰 등록 연동용으로 추가 예정 |
 | 푸시 | expo-notifications, 알림 탭 시 `data.link` 로 WebView URL 변경 |
 | 딥링크 | 스킴 **myballet://** |

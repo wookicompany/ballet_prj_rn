@@ -1,7 +1,13 @@
 import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { WEBVIEW_ORIGIN } from '../constants/config';
+import {
+  WEBVIEW_ALLOWED_HOST_SUFFIXES,
+  WEBVIEW_ALLOWED_HOSTS,
+  WEBVIEW_FORCE_EXTERNAL_HOST_SUFFIXES,
+  WEBVIEW_FORCE_EXTERNAL_HOSTS,
+  WEBVIEW_ORIGIN,
+} from '../constants/config';
 import { openExternalUrl } from '../services/linking';
 
 interface MyBalletWebViewProps {
@@ -22,6 +28,45 @@ function isSameOrigin(url: string): boolean {
   }
 }
 
+function normalizeHost(host: string): string {
+  return host.trim().toLowerCase().replace(/\.$/, '');
+}
+
+function isAllowedHost(host: string): boolean {
+  const normalized = normalizeHost(host);
+  if (!normalized) return false;
+  if (WEBVIEW_ALLOWED_HOSTS.some((h) => normalizeHost(h) === normalized)) return true;
+  return WEBVIEW_ALLOWED_HOST_SUFFIXES.some((suffix) => normalized.endsWith(suffix));
+}
+
+function isForceExternalHost(host: string): boolean {
+  const normalized = normalizeHost(host);
+  if (!normalized) return false;
+  if (WEBVIEW_FORCE_EXTERNAL_HOSTS.some((h) => normalizeHost(h) === normalized)) return true;
+  return WEBVIEW_FORCE_EXTERNAL_HOST_SUFFIXES.some((suffix) => normalized.endsWith(suffix));
+}
+
+function isForceExternalUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
+    return isForceExternalHost(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function isAllowedInWebView(url: string): boolean {
+  if (isSameOrigin(url)) return true;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
+    return isAllowedHost(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
 export function MyBalletWebView({
   url,
   onMessage,
@@ -34,11 +79,19 @@ export function MyBalletWebView({
       return false;
     }
     const targetUrl = request.url;
-    if (isSameOrigin(targetUrl)) {
+    if (isForceExternalUrl(targetUrl)) {
+      openExternalUrl(targetUrl);
+      return false;
+    }
+    if (isAllowedInWebView(targetUrl)) {
       return true;
     }
     const lower = targetUrl.toLowerCase();
-    if (lower.startsWith('http://') || lower.startsWith('https://') || lower.startsWith('tel:') || lower.startsWith('mailto:')) {
+    if (lower.startsWith('tel:') || lower.startsWith('mailto:')) {
+      openExternalUrl(targetUrl);
+      return false;
+    }
+    if (lower.startsWith('http://') || lower.startsWith('https://')) {
       openExternalUrl(targetUrl);
       return false;
     }
