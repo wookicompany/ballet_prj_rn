@@ -3,6 +3,7 @@ node_modules/
 
 # Expo
 .expo/
+.expo-shared/
 dist/
 web-build/
 
@@ -11,10 +12,14 @@ ios/
 android/
 *.orig.*
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key
 *.mobileprovision
+*.apk
+*.aab
+*.ipa
 
 # Metro
 .metro-health-check*
@@ -45,5 +50,3 @@ Thumbs.db
 coverage/
 .nyc_output/
 
-# EAS
-.easignore
