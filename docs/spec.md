@@ -71,6 +71,17 @@
 
 ---
 
+## 4. 주소검색 브릿지 (RN WebView)
+
+**결정: WebView 브릿지 + RN 주소검색 모달**
+
+- 웹에서 `open_address_search` 메시지 수신 시 RN이 네이티브 주소검색 모달을 연다.
+- 주소 선택 시 RN이 `address_selected`를 `postMessage`로 웹에 전달한다.
+- 1차 반환 필드는 `address`, `roadAddress`, `jibunAddress`만 사용한다.
+- 취소/파싱 실패는 no-op 처리한다.
+
+---
+
 ## 다음 단계
 
 - 구현은 프로젝트 코드 및 Cursor 플랜 참고.

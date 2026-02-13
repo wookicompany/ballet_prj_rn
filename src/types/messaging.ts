@@ -2,7 +2,10 @@
  * Web → RN postMessage payload types.
  * Web sends JSON.stringify(payload) via window.ReactNativeWebView?.postMessage(...)
  */
-export type WebToRNMessage = { type: 'haptic' } | { type: 'auth_token'; access_token: string };
+export type WebToRNMessage =
+  | { type: 'haptic' }
+  | { type: 'auth_token'; access_token: string }
+  | { type: 'open_address_search' };
 
 export function parseWebMessage(data: string): WebToRNMessage | null {
   try {
@@ -20,6 +23,10 @@ export function parseWebMessage(data: string): WebToRNMessage | null {
       if (token.length > 0) {
         return { type: 'auth_token', access_token: token };
       }
+    }
+
+    if (parsed.type === 'open_address_search') {
+      return { type: 'open_address_search' };
     }
 
     return null;

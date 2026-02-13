@@ -15,7 +15,7 @@ interface MyBalletWebViewProps {
   onMessage?: (event: { nativeEvent: { data: string } }) => void;
   onShouldStartLoadWithRequest?: (request: { url: string }) => boolean;
   onNavigationStateChange?: (nav: { canGoBack?: boolean }) => void;
-  webViewRef?: React.RefObject<WebView>;
+  webViewRef?: React.RefObject<WebView | null>;
 }
 
 function isSameOrigin(url: string): boolean {

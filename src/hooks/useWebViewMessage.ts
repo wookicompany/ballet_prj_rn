@@ -2,11 +2,12 @@ import { useCallback } from 'react';
 import * as Haptics from 'expo-haptics';
 import { parseWebMessage } from '../types/messaging';
 
-interface UseHapticMessageOptions {
+interface UseWebViewMessageOptions {
   onAuthToken?: (accessToken: string) => void;
+  onOpenAddressSearch?: () => void;
 }
 
-export function useHapticMessage({ onAuthToken }: UseHapticMessageOptions = {}) {
+export function useWebViewMessage({ onAuthToken, onOpenAddressSearch }: UseWebViewMessageOptions = {}) {
   const handleMessage = useCallback((event: { nativeEvent: { data: string } }) => {
     const payload = parseWebMessage(event.nativeEvent.data);
     if (!payload) return;
@@ -18,8 +19,13 @@ export function useHapticMessage({ onAuthToken }: UseHapticMessageOptions = {}) 
 
     if (payload.type === 'auth_token') {
       onAuthToken?.(payload.access_token);
+      return;
     }
-  }, [onAuthToken]);
+
+    if (payload.type === 'open_address_search') {
+      onOpenAddressSearch?.();
+    }
+  }, [onAuthToken, onOpenAddressSearch]);
 
   return handleMessage;
 }

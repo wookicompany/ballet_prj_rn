@@ -2,17 +2,20 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
+import { AddressSearchModal, type AddressSelectedPayload } from '../components/AddressSearchModal';
 import { MyBalletWebView } from '../components/MyBalletWebView';
 import { NotificationBanner } from '../components/NotificationBanner';
 import { WEBVIEW_ORIGIN } from '../constants/config';
 import { useFcmToken } from '../hooks/useFcmToken';
-import { useHapticMessage } from '../hooks/useHapticMessage';
+import { useWebViewMessage } from '../hooks/useWebViewMessage';
 import { useWebViewUrl } from '../hooks/useWebViewUrl';
 import type { WebView } from 'react-native-webview';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
@@ -23,14 +26,32 @@ type ForegroundNotification = { title?: string; body?: string; link?: string } |
 export function WebViewScreen() {
   const { url, setUrl } = useWebViewUrl();
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [isAddressSearchOpen, setIsAddressSearchOpen] = useState(false);
   const [canGoBack, setCanGoBack] = useState(false);
   const [foregroundNotification, setForegroundNotification] = useState<ForegroundNotification>(null);
   const webViewRef = useRef<WebView>(null);
   const handleAuthToken = useCallback((token: string) => {
     setAccessToken((prev) => (prev === token ? prev : token));
   }, []);
-  const onMessage = useHapticMessage({ onAuthToken: handleAuthToken });
+  const handleOpenAddressSearch = useCallback(() => {
+    setIsAddressSearchOpen(true);
+  }, []);
+  const onMessage = useWebViewMessage({
+    onAuthToken: handleAuthToken,
+    onOpenAddressSearch: handleOpenAddressSearch,
+  });
   useFcmToken(accessToken);
+
+  const handleAddressSelected = useCallback((payload: AddressSelectedPayload) => {
+    webViewRef.current?.postMessage?.(
+      JSON.stringify({
+        type: 'address_selected',
+        address: payload.address,
+        roadAddress: payload.roadAddress,
+        jibunAddress: payload.jibunAddress,
+      }),
+    );
+  }, []);
 
   const onNavigationStateChange = useCallback((nav: { canGoBack?: boolean }) => {
     setCanGoBack(nav.canGoBack ?? false);
@@ -83,6 +104,10 @@ export function WebViewScreen() {
   React.useEffect(() => {
     if (Platform.OS !== 'android') return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (isAddressSearchOpen) {
+        setIsAddressSearchOpen(false);
+        return true;
+      }
       if (canGoBack) {
         webViewRef.current?.goBack?.();
       } else {
@@ -91,7 +116,7 @@ export function WebViewScreen() {
       return true;
     });
     return () => sub.remove();
-  }, [canGoBack]);
+  }, [canGoBack, isAddressSearchOpen]);
 
   return (
     <View style={styles.wrapper}>
@@ -111,6 +136,11 @@ export function WebViewScreen() {
           webViewRef={webViewRef}
           onMessage={onMessage}
           onNavigationStateChange={onNavigationStateChange}
+        />
+        <AddressSearchModal
+          visible={isAddressSearchOpen}
+          onClose={() => setIsAddressSearchOpen(false)}
+          onSelected={handleAddressSelected}
         />
       </SafeAreaView>
     </View>
