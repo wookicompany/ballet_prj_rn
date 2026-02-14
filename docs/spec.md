@@ -17,16 +17,15 @@
 
 | 항목 | 선택 | 이유 |
 |------|------|------|
-| RN 생성 방식 | Expo (SDK 52+) | 설정 단순, EAS 빌드, config plugin으로 iOS/Android 설정. |
+| RN 생성 방식 | Expo (SDK 54) | 설정 단순, EAS 빌드, config plugin으로 iOS/Android 설정. |
 | WebView | **react-native-webview** | 연동 가이드 명시. Expo에서 지원. |
 | FCM / 푸시 | **expo-notifications** | Expo와 잘 맞고, Bare/이젝트 불필요. 푸시 토큰·수신·탭 시 URL 처리 가능. `@react-native-firebase`는 Bare용. |
 | 햅틱 | **expo-haptics** | Expo SDK 포함, 추가 네이티브 설정 없음. 웹 `type: 'haptic'` 수신 시 호출. |
+| 주소검색 | **@actbase/react-daum-postcode** | RN 모달에서 주소검색 후 WebView 브릿지로 결과 전달. |
 
 **정리:** Expo 워크플로우 유지 시 FCM은 expo-notifications, 햅틱은 expo-haptics.
 
 ---
-
-## 의사결정 기록
 
 ### 1. React Native 프로젝트 생성 방식
 
@@ -45,8 +44,8 @@
 - **Headers:** `Authorization: Bearer <Supabase access_token>`
 - **Body:** `{ "fcm_token": "<FCM device token>" }`
 - RN: 로그인 이후 유효한 `access_token`을 확보해 위 스펙으로 호출.
-- 웹 배포 기준 postMessage는 현재 `type: 'haptic'`만 배포됨.
-- `auth_token` 전달은 웹에서 추가 배포되면 RN이 수신해 토큰 등록 호출에 사용.
+- 웹 배포 기준 postMessage는 `type: 'haptic'`, `type: 'auth_token'`, `type: 'open_address_search'`를 사용한다.
+- RN은 `auth_token` 수신 시 FCM 토큰 등록 호출 흐름에 사용한다.
 
 ### 3. 딥링크 앱 스킴
 
@@ -64,8 +63,8 @@
 | URL / 진입 | 기본 `https://www.myballet.co.kr/calendar`, 푸시·딥링크 시 payload `link` 로드 |
 | 로그인 | WebView 내 OAuth, RN 토큰 전달 불필요 |
 | 백 버튼 | WebView `goBack()` 우선, 없으면 앱 네비 |
-| 외부 링크 | OAuth 허용 도메인(`myballet`, `supabase`, `kakao`)은 WebView 유지, Google OAuth(`accounts.google.com`)는 정책상 외부 브라우저로 처리, 그 외·tel·mailto는 브라우저/앱 |
-| postMessage | 웹→RN `type: 'haptic'` 배포 완료, `type: 'auth_token'`은 토큰 등록 연동용으로 추가 예정 |
+| 외부 링크 | OAuth 허용 도메인(`myballet`, `supabase`, `kakao`, `apple`)은 WebView 유지, Google OAuth(`accounts.google.com`)는 정책상 외부 브라우저로 처리, 그 외·tel·mailto는 브라우저/앱 |
+| postMessage | 웹→RN `type: 'haptic'`, `type: 'auth_token'`, `type: 'open_address_search'` 수신 처리 |
 | 푸시 | expo-notifications, 알림 탭 시 `data.link` 로 WebView URL 변경 |
 | 딥링크 | 스킴 **myballet://** |
 
@@ -84,5 +83,5 @@
 
 ## 다음 단계
 
-- 구현은 프로젝트 코드 및 Cursor 플랜 참고.
-- 웹팀: 푸시 payload `data.link` 규격 재확인.
+- Google 외부 브라우저 로그인 후 앱 복귀를 위해 OAuth redirect URL에 앱 스킴(`myballet://...`) 연동을 확정한다.
+- 주소검색 브릿지 2차 확장 필요 시 `zonecode` 등 추가 필드 전달을 검토한다.
