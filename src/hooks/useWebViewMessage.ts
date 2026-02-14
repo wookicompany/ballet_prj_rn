@@ -13,7 +13,7 @@ export function useWebViewMessage({ onAuthToken, onOpenAddressSearch }: UseWebVi
     if (!payload) return;
 
     if (payload.type === 'haptic') {
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       return;
     }
 
