@@ -10,7 +10,6 @@ web-build/
 # Native build
 ios/
 android/
-GoogleService-Info.plist
 *.orig.*
 *.jks
 *.keystore
