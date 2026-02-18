@@ -8,6 +8,7 @@ import { NotificationBanner } from '../components/NotificationBanner';
 import { WEBVIEW_ORIGIN } from '../constants/config';
 import { useFcmToken } from '../hooks/useFcmToken';
 import { useWebViewMessage } from '../hooks/useWebViewMessage';
+import { registerFcmToken } from '../services/fcm';
 import { useWebViewUrl } from '../hooks/useWebViewUrl';
 import type { WebView } from 'react-native-webview';
 
@@ -30,15 +31,42 @@ export function WebViewScreen() {
   const [canGoBack, setCanGoBack] = useState(false);
   const [foregroundNotification, setForegroundNotification] = useState<ForegroundNotification>(null);
   const webViewRef = useRef<WebView>(null);
+  const lastAccessTokenRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (accessToken) {
+      lastAccessTokenRef.current = accessToken;
+    }
+  }, [accessToken]);
+
   const handleAuthToken = useCallback((token: string) => {
     setAccessToken((prev) => (prev === token ? prev : token));
   }, []);
+
+  const clearRegisteredFcmToken = useCallback(async (eventType: 'logout' | 'account_deleted') => {
+    const tokenForClear = accessToken ?? lastAccessTokenRef.current;
+    if (!tokenForClear) {
+      console.warn('[FCM] Skip token clear: no access token', { eventType });
+      setAccessToken(null);
+      return;
+    }
+
+    try {
+      await registerFcmToken(tokenForClear, '');
+    } catch (error) {
+      console.warn('[FCM] Token clear failed', { eventType, error });
+    } finally {
+      setAccessToken(null);
+    }
+  }, [accessToken]);
+
   const handleOpenAddressSearch = useCallback(() => {
     setIsAddressSearchOpen(true);
   }, []);
   const onMessage = useWebViewMessage({
     onAuthToken: handleAuthToken,
     onOpenAddressSearch: handleOpenAddressSearch,
+    onSessionTerminated: clearRegisteredFcmToken,
   });
   useFcmToken(accessToken);
 
