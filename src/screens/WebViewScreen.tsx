@@ -24,7 +24,11 @@ Notifications.setNotificationHandler({
 
 type ForegroundNotification = { title?: string; body?: string; link?: string } | null;
 
-export function WebViewScreen() {
+interface WebViewScreenProps {
+  onInitialWebViewReady?: () => void;
+}
+
+export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
   const { url, setUrl } = useWebViewUrl();
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isAddressSearchOpen, setIsAddressSearchOpen] = useState(false);
@@ -32,6 +36,7 @@ export function WebViewScreen() {
   const [foregroundNotification, setForegroundNotification] = useState<ForegroundNotification>(null);
   const webViewRef = useRef<WebView>(null);
   const lastAccessTokenRef = useRef<string | null>(null);
+  const isInitialWebViewReadyNotifiedRef = useRef(false);
 
   useEffect(() => {
     if (accessToken) {
@@ -84,6 +89,12 @@ export function WebViewScreen() {
   const onNavigationStateChange = useCallback((nav: { canGoBack?: boolean }) => {
     setCanGoBack(nav.canGoBack ?? false);
   }, []);
+
+  const handleWebViewLoadEnd = useCallback(() => {
+    if (isInitialWebViewReadyNotifiedRef.current) return;
+    isInitialWebViewReadyNotifiedRef.current = true;
+    onInitialWebViewReady?.();
+  }, [onInitialWebViewReady]);
 
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
@@ -164,6 +175,7 @@ export function WebViewScreen() {
           webViewRef={webViewRef}
           onMessage={onMessage}
           onNavigationStateChange={onNavigationStateChange}
+          onLoadEnd={handleWebViewLoadEnd}
         />
         <AddressSearchModal
           visible={isAddressSearchOpen}

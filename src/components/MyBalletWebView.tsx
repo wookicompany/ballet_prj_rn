@@ -15,6 +15,7 @@ interface MyBalletWebViewProps {
   onMessage?: (event: { nativeEvent: { data: string } }) => void;
   onShouldStartLoadWithRequest?: (request: { url: string }) => boolean;
   onNavigationStateChange?: (nav: { canGoBack?: boolean }) => void;
+  onLoadEnd?: () => void;
   webViewRef?: React.RefObject<WebView | null>;
 }
 
@@ -72,6 +73,7 @@ export function MyBalletWebView({
   onMessage,
   onShouldStartLoadWithRequest,
   onNavigationStateChange,
+  onLoadEnd,
   webViewRef,
 }: MyBalletWebViewProps) {
   const handleShouldStartLoadWithRequest = (request: { url: string }) => {
@@ -107,6 +109,7 @@ export function MyBalletWebView({
         onMessage={onMessage}
         onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
         onNavigationStateChange={onNavigationStateChange}
+        onLoadEnd={onLoadEnd}
         javaScriptEnabled
         domStorageEnabled
         sharedCookiesEnabled

@@ -3,11 +3,35 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as SplashScreen from 'expo-splash-screen';
 import { WebViewScreen } from './src/screens/WebViewScreen';
 
 const Stack = createNativeStackNavigator();
+const MIN_SPLASH_MS = 2000;
+
+void SplashScreen.preventAutoHideAsync().catch(() => {
+  // no-op: splash may already be handled by native side
+});
 
 export default function App() {
+  const [isMinDurationElapsed, setIsMinDurationElapsed] = React.useState(false);
+  const [isInitialWebViewReady, setIsInitialWebViewReady] = React.useState(false);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsMinDurationElapsed(true);
+    }, MIN_SPLASH_MS);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  React.useEffect(() => {
+    if (!isMinDurationElapsed || !isInitialWebViewReady) return;
+    void SplashScreen.hideAsync().catch(() => {
+      // no-op: splash might already be hidden
+    });
+  }, [isInitialWebViewReady, isMinDurationElapsed]);
+
   return (
     <SafeAreaProvider>
       <StatusBar style="auto" />
@@ -17,7 +41,9 @@ export default function App() {
             headerShown: false,
           }}
         >
-          <Stack.Screen name="WebView" component={WebViewScreen} />
+          <Stack.Screen name="WebView">
+            {() => <WebViewScreen onInitialWebViewReady={() => setIsInitialWebViewReady(true)} />}
+          </Stack.Screen>
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
