@@ -45,6 +45,12 @@
     "plugins": [
       "expo-notifications",
       [
+        "expo-splash-screen",
+        {
+          "imageWidth": 220
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "ios": {
