@@ -57,7 +57,42 @@ RN 앱에서 마이발레 웹을 WebView로 붙일 때 참고할 내용이다.
 - **RN**: `onMessage` 로 수신 후 `type === 'haptic'` 이면 네이티브 햅틱 API 호출.
 - **기타**: RN→웹은 `injectJavaScript` 로 전역 함수/이벤트 전달. 딥링크·공유 등 추가 이벤트는 필요 시 `type` 확장.
 
-**알림 배너(댓글/좋아요) 구현 (확정):** postMessage 아님. **마이발레 Vercel API** 에서 댓글/좋아요 생성 시 수신자 `fcm_token`을 Supabase에서 조회한 뒤 **FCM API 호출**. Supabase는 DB·토큰 저장만 사용. RN은 FCM 토큰을 등록하고 푸시 수신 시 배너 표시·탭 시 해당 URL로 WebView 이동.
+### 4.1 로그아웃/회원탈퇴 해제 이벤트 (고정 스펙)
+
+- **허용 타입(대소문자 고정):**
+  - `logout`
+  - `account_deleted`
+- **고정 포맷:** `{ "type": "<type>", "version": 1 }`
+- **발신 시점(웹 기준):**
+  - `logout`: 로그아웃 성공 직후(로컬 세션 정리 성공 후)
+  - `account_deleted`: 회원탈퇴 API 성공 직후(로컬 세션 정리 직후)
+- **웹 구현 지점:**
+  - 일반 provider 로그아웃/회원탈퇴: `app/profile/menu/page.tsx`
+  - 카카오 로그아웃: `app/auth/kakao/logout/callback/page.tsx`에서만 송신(중복 송신 방지)
+- **RN 수신 규칙:**
+  - 위 두 타입 + `version: 1`만 처리
+  - 처리 시 공통으로 `POST /api/profile/expo-push-token` with `{ "expo_push_token": "" }` 호출
+  - 스펙 외 타입/버전은 무시하고 경고 로그만 남김
+
+**알림 배너(댓글/좋아요) 구현 (확정):** postMessage 아님. **마이발레 Vercel API** 에서 댓글/좋아요 생성 시 수신자 `expo_push_token`을 Supabase에서 조회한 뒤 **Expo Push API 호출**. Supabase는 DB·토큰 저장만 사용. RN은 Expo 토큰을 등록하고 푸시 수신 시 배너 표시·탭 시 해당 URL로 WebView 이동.
+
+- RN 토큰 등록 API: `POST /api/profile/expo-push-token`
+- 요청 본문: `{ "expo_push_token": "ExponentPushToken[...]" }` (`""` 전송 시 토큰 제거)
+- API 응답(고정):
+  - `{ "ok": true, "action": "register_or_refresh" }`
+  - `{ "ok": true, "action": "unregister" }`
+- 에러 규칙(고정):
+  - `401 Unauthorized`
+  - `403 Forbidden`
+  - `422 expo_push_token` 형식 오류
+  - `500` 저장/내부 오류
+- RN 토큰 발급: `Notifications.getExpoPushTokenAsync({ projectId })`
+  - `projectId`는 RN `app.json`의 `extra.eas.projectId`와 일치해야 함
+- 알림 payload 규칙:
+  - `data.link`는 절대 URL 고정 (예: `https://www.myballet.co.kr/performance/{pid}/reviews/{rid}`)
+  - 토큰 저장 정책은 단일 컬럼 유지(마지막 로그인 기기만 수신)
+- Expo 서버 인증:
+  - 웹 발송 시 `EXPO_ACCESS_TOKEN` 기반 인증을 기본 정책으로 사용
 
 ---
 
@@ -68,7 +103,7 @@ RN 앱에서 마이발레 웹을 WebView로 붙일 때 참고할 내용이다.
 | 라이브러리 | `react-native-webview` |
 | URL / 진입 | 프로덕션 `https://www.myballet.co.kr/` · **상황별 (확정)** 기본 `/calendar`, 푸시·딥링크 시 payload URL로 로드 |
 | 로그인 | **WebView 내 OAuth (확정)** · 콜백 `https://www.myballet.co.kr/auth/callback` |
-| postMessage | **함 (확정)** · 웹→RN 햅틱용. 알림 배너는 **마이발레 Vercel API + FCM** 별도 구현 |
+| postMessage | **함 (확정)** · 햅틱 + 해제 이벤트(`logout`, `account_deleted`, `version:1`) |
 | 세션 | WebView 스토리지에 자동 저장, RN에서 별도 토큰 전달 불필요 |
 | iOS | `http` 사용 시 ATS 예외, OAuth 도메인 허용 |
 | Android | `http` 사용 시 cleartext/네트워크 보안 설정 |

@@ -21,15 +21,15 @@ export const DEFAULT_ENTRY_PATH = '/calendar';
 export const DEFAULT_WEBVIEW_URL = `${BASE_WEB_URL}${DEFAULT_ENTRY_PATH}`;
 
 /**
- * FCM token registration endpoint (web API).
- * POST with Body: { fcm_token: string }, Headers: Authorization: Bearer <Supabase access_token>
+ * Expo push token registration endpoint (web API).
+ * POST with Body: { expo_push_token: string }, Headers: Authorization: Bearer <Supabase access_token>
  */
-export const FCM_TOKEN_API_PATH = '/api/profile/fcm-token';
+export const EXPO_PUSH_TOKEN_API_PATH = '/api/profile/expo-push-token';
 
 /**
- * Full URL for FCM token registration (same origin as web).
+ * Full URL for Expo push token registration (same origin as web).
  */
-export const FCM_TOKEN_API_URL = `${BASE_WEB_URL}${FCM_TOKEN_API_PATH}`;
+export const EXPO_PUSH_TOKEN_API_URL = `${BASE_WEB_URL}${EXPO_PUSH_TOKEN_API_PATH}`;
 
 /**
  * Allowed origin for WebView (same domain only in WebView; others open externally).

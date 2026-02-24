@@ -42,7 +42,7 @@
 
 - 인증/세션 토큰은 WebView OAuth 흐름과 프로젝트 브릿지 규약을 따른다.
 - RN에서 웹 API 호출 시 액세스 토큰은 브릿지로 전달받은 값만 사용하고, 실패 시 no-op/재시도 정책을 명확히 둔다.
-- FCM 토큰 등록은 `POST /api/profile/fcm-token` 규약을 따른다.
+- Expo Push 토큰 등록은 `POST /api/profile/expo-push-token` 규약을 따른다.
 
 ## 프로젝트 구조
 

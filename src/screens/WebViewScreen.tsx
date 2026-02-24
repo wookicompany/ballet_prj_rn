@@ -6,9 +6,9 @@ import { AddressSearchModal, type AddressSelectedPayload } from '../components/A
 import { MyBalletWebView } from '../components/MyBalletWebView';
 import { NotificationBanner } from '../components/NotificationBanner';
 import { WEBVIEW_ORIGIN } from '../constants/config';
-import { useFcmToken } from '../hooks/useFcmToken';
+import { useExpoPushToken } from '../hooks/useExpoPushToken';
 import { useWebViewMessage } from '../hooks/useWebViewMessage';
-import { registerFcmToken } from '../services/fcm';
+import { registerExpoPushToken } from '../services/expoPush';
 import { useWebViewUrl } from '../hooks/useWebViewUrl';
 import type { WebView } from 'react-native-webview';
 
@@ -48,18 +48,18 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
     setAccessToken((prev) => (prev === token ? prev : token));
   }, []);
 
-  const clearRegisteredFcmToken = useCallback(async (eventType: 'logout' | 'account_deleted') => {
+  const clearRegisteredExpoPushToken = useCallback(async (eventType: 'logout' | 'account_deleted') => {
     const tokenForClear = accessToken ?? lastAccessTokenRef.current;
     if (!tokenForClear) {
-      console.warn('[FCM] Skip token clear: no access token', { eventType });
+      console.warn('[ExpoPush] Skip token clear: no access token', { eventType });
       setAccessToken(null);
       return;
     }
 
     try {
-      await registerFcmToken(tokenForClear, '');
+      await registerExpoPushToken(tokenForClear, '');
     } catch (error) {
-      console.warn('[FCM] Token clear failed', { eventType, error });
+      console.warn('[ExpoPush] Token clear failed', { eventType, error });
     } finally {
       setAccessToken(null);
     }
@@ -71,9 +71,9 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
   const onMessage = useWebViewMessage({
     onAuthToken: handleAuthToken,
     onOpenAddressSearch: handleOpenAddressSearch,
-    onSessionTerminated: clearRegisteredFcmToken,
+    onSessionTerminated: clearRegisteredExpoPushToken,
   });
-  useFcmToken(accessToken);
+  useExpoPushToken(accessToken);
 
   const handleAddressSelected = useCallback((payload: AddressSelectedPayload) => {
     webViewRef.current?.postMessage?.(

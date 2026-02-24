@@ -11,7 +11,7 @@
 | 로그인(OAuth WebView 내) | 웹 이미 구현됨 | ✅ 변경 없음 |
 | 진입 경로 / 외부 링크 | RN | ❌ 웹 작업 없음 |
 | **햅틱 postMessage** | 웹 → RN | ✅ **웹: postMessage 호출 추가** |
-| **알림 배너(FCM)** | 마이발레 Vercel API + FCM | ✅ **웹: 토큰 저장·API에서 FCM 호출** |
+| **알림 배너(Expo Push)** | 마이발레 Vercel API + Expo Push API | ✅ **웹: 토큰 저장·API에서 Expo Push 호출** |
 
 ---
 
@@ -44,38 +44,48 @@
 
 ---
 
-## 2. 알림 배너 — 마이발레 Vercel API에서 FCM 호출
+## 2. 알림 배너 — 마이발레 Vercel API에서 Expo Push 호출
 
-**목표:** 댓글/리뷰 좋아요/댓글 좋아요 발생 시, 알림 받을 사용자의 `fcm_token`으로 FCM 푸시 발송. 푸시 payload에 `link` 포함해 RN에서 해당 URL로 WebView 로드 가능하게.
+**목표:** 댓글/리뷰 좋아요/댓글 좋아요 발생 시, 알림 받을 사용자의 `expo_push_token`으로 Expo Push 발송. 푸시 payload의 `data.link`는 절대 URL로 고정해 RN에서 해당 URL을 WebView로 로드 가능하게.
 
-### 2.1 DB — FCM 토큰 저장
+### 2.1 DB — Expo Push 토큰 저장
 
 - **테이블:** `profiles` (기존)
-- **추가 컬럼:** `fcm_token` (text, nullable).
+- **추가 컬럼:** `expo_push_token` (text, nullable). (`fcm_token`은 컷오버 완료 전까지 유지)
+- **정책:** 단일 컬럼 유지(마지막 로그인 기기만 수신).
 - **방법:** Supabase 마이그레이션 또는 대시보드에서 컬럼 추가.
 - **동의:** RN에서 토큰 등록 시점·개인정보 처리방침 연동은 RN/앱 정책에 따름. 웹 API는 “로그인 사용자가 보낸 토큰 저장”만 담당.
 
-### 2.2 API — FCM 토큰 등록
+### 2.2 API — Expo Push 토큰 등록
 
-- **엔드포인트:** `PATCH /api/profile` 확장 또는 `POST /api/profile/fcm-token` 신규.
-- **역할:** 로그인 사용자의 `profiles.fcm_token` 갱신. RN 앱이 로그인/토큰 갱신 시 호출.
-- **요청:** body에 `{ fcm_token: string }` (또는 `token`). 빈 문자열이면 토큰 삭제(알림 비수신) 처리 여부는 정책에 따라 결정.
+- **엔드포인트:** `POST /api/profile/expo-push-token`
+- **역할:** 로그인 사용자의 `profiles.expo_push_token` 갱신/해제. RN 앱이 로그인/토큰 갱신/로그아웃 시 호출.
+- **요청:** body `{ "expo_push_token": "ExponentPushToken[...]" }` (`""`은 해제 의미, DB에는 `null` 저장)
 - **인증:** 기존 `getUserFromRequest` 등으로 user_id 확보 후 해당 profile 업데이트.
+- **응답(고정):**
+  - `{ "ok": true, "action": "register_or_refresh" }`
+  - `{ "ok": true, "action": "unregister" }`
+- **에러 규칙(고정):**
+  - `401 Unauthorized`
+  - `403 Forbidden`
+  - `422 expo_push_token 형식 오류`
+  - `500 저장/내부 오류`
+- **정합성 보강:** `update(...).eq("id", userId).select("id").single()`로 0-row 성공 오인 방지.
 
-### 2.3 Firebase / FCM 설정
+### 2.3 Expo Push 설정
 
-- Firebase 프로젝트 생성, Android/iOS 앱 등록( RN 쪽에서 사용할 프로젝트와 동일).
-- 서비스 계정 키 생성 → JSON 내용을 Vercel 환경 변수에 저장 (예: `FIREBASE_SERVICE_ACCOUNT_KEY`). 코드에서는 파일이 아닌 env에서만 읽기.
-- **패키지:** `firebase-admin` (또는 FCM HTTP v1 API를 `fetch`로 호출). Vercel 서버리스에서 동작하도록 초기화 시 env 사용.
+- **인증 정책:** `EXPO_ACCESS_TOKEN` 기반 인증을 기본 정책으로 사용.
+- **RN 토큰 발급 계약:** `Notifications.getExpoPushTokenAsync({ projectId })` 사용.
+- **projectId 정합성:** 발급에 사용한 `projectId`와 RN `app.json > extra.eas.projectId`가 반드시 일치.
 
-### 2.4 FCM 발송 유틸
+### 2.4 Expo Push 발송 유틸
 
-- **파일:** `lib/fcm.ts` (또는 `lib/notifications/fcm.ts`)
-- **함수:** `sendFCMToUser(userId: string, payload: { title: string; body: string; link?: string })`
-  - `profiles`에서 `id = userId`인 행의 `fcm_token` 조회.
+- **파일:** `lib/expoPush.ts`
+- **함수:** `sendExpoPushToUser(userId: string, payload: { title: string; body?: string; link: string })`
+  - `profiles`에서 `id = userId`인 행의 `expo_push_token` 조회.
   - 토큰 없으면 스킵.
-  - 있으면 FCM API로 전송. `data`에 `link` 넣어 두어 RN에서 알림 탭 시 해당 URL 로드 가능하게.
-- **에러 처리:** FCM 실패 시 로그만 남기고, 댓글/좋아요 API 응답은 성공 유지(푸시 실패가 사용자 액션 실패로 이어지지 않도록). 필요 시 재시도/큐는 후순위.
+  - 있으면 Expo Push API로 전송. `data.link`는 절대 URL만 사용.
+- **에러 처리:** Expo 발송 실패 시 로그만 남기고, 댓글/좋아요 API 응답은 성공 유지(푸시 실패가 사용자 액션 실패로 이어지지 않도록). 필요 시 재시도/큐는 후순위.
 
 ### 2.5 댓글 생성 시 푸시 (이미 API 있음)
 
@@ -83,10 +93,10 @@
 - **흐름:**  
   1. 기존대로 `performance_review_comments`에 insert.  
   2. insert 성공 후, 해당 리뷰의 `performance_reviews.user_id`(리뷰 작성자) 조회.  
-  3. 리뷰 작성자 ≠ 댓글 작성자이면, 리뷰 작성자에게 FCM 발송.  
+  3. 리뷰 작성자 ≠ 댓글 작성자이면, 리뷰 작성자에게 Expo Push 발송.  
      - title/body: 예) "새 댓글", "OOO님이 리뷰에 댓글을 남겼어요" (실제 문구는 기획에 맞게).  
      - link: `https://www.myballet.co.kr/performance/[performance_id]/reviews/[review_id]`.  
-  4. FCM 호출은 **비동기**로 처리하고 응답은 기존처럼 댓글 데이터만 반환.
+  4. Expo Push 호출은 **비동기**로 처리하고 응답은 기존처럼 댓글 데이터만 반환.
 
 ### 2.6 리뷰 좋아요 시 푸시 (현재 클라이언트 직접 insert)
 
@@ -94,9 +104,9 @@
 - **선택지:**
   - **A (권장):** `POST /api/reviews/[id]/like` (또는 `POST /api/performance-reviews/[id]/like`) 신규.  
     - 내부에서 `performance_review_likes` insert.  
-    - insert 성공 후 리뷰 작성자 조회, 본인이 아니면 FCM 발송.  
+    - insert 성공 후 리뷰 작성자 조회, 본인이 아니면 Expo Push 발송.  
     - 클라이언트는 이 API를 호출하도록 변경 (공연 상세·리뷰 목록 등에서 좋아요 시).
-  - **B:** Supabase DB Webhook으로 `performance_review_likes` INSERT 감지 → Webhook이 우리 API URL 호출 → API에서 FCM만 발송.  
+  - **B:** Supabase DB Webhook으로 `performance_review_likes` INSERT 감지 → Webhook이 우리 API URL 호출 → API에서 Expo Push만 발송.  
     - 클라이언트는 그대로 direct insert.  
     - Webhook 설정·보안(서비스 키 등) 필요.
 - **계획 반영:** A로 진행. API 추가 + 클라이언트 호출 변경.
@@ -104,14 +114,14 @@
 ### 2.7 댓글 좋아요 시 푸시 (현재 클라이언트 직접 insert)
 
 - **현재:** 클라이언트가 `performance_review_comment_likes` 직접 insert.
-- **선택지:** 리뷰 좋아요와 동일. **A (권장):** `POST /api/review-comments/[id]/like` 신규. insert + 댓글 작성자 조회 후 FCM. 클라이언트는 이 API 호출로 변경.
+- **선택지:** 리뷰 좋아요와 동일. **A (권장):** `POST /api/review-comments/[id]/like` 신규. insert + 댓글 작성자 조회 후 Expo Push. 클라이언트는 이 API 호출로 변경.
 - **계획 반영:** A로 진행.
 
-### 2.8 푸시 payload 규격 (RN과 협의)
+### 2.8 푸시 payload 규격 (RN 고정 계약)
 
-- **공통:** `data`에 `link` (전체 URL 또는 path). RN은 알림 탭 시 이 URL로 WebView 로드.
+- **공통:** `data.link`는 절대 URL 고정. RN은 알림 탭 시 이 URL로 WebView 로드.
 - **타입별 link 예:**
-  - 댓글 알림: `/performance/[performanceId]/reviews/[reviewId]`
+  - 댓글 알림: `https://www.myballet.co.kr/performance/[performanceId]/reviews/[reviewId]`
   - 리뷰 좋아요: 동일
   - 댓글 좋아요: 동일 (해당 댓글이 속한 리뷰 페이지)
 
@@ -122,20 +132,57 @@
 | 순서 | 작업 | 비고 |
 |------|------|------|
 | 1 | **햅틱** — `lib/reactNativeWebView.ts` + Button/Switch 연동 | RN 없이 브라우저에서도 안전하게 동작하는지 확인 |
-| 2 | **DB** — `profiles.fcm_token` 컬럼 추가 | Supabase 마이그레이션 |
-| 3 | **FCM 설정** — Firebase 프로젝트·서비스 계정·Vercel env | RN 앱과 동일 Firebase 프로젝트 사용 |
-| 4 | **lib/fcm.ts** — sendFCMToUser 유틸 | 토큰 없음/실패 시 no-op 또는 로그만 |
-| 5 | **API** — FCM 토큰 등록 (PATCH profile 또는 POST fcm-token) | RN이 토큰 보낼 엔드포인트 |
-| 6 | **API** — POST review-comments 내 FCM 호출 | 댓글 알림 |
+| 2 | **DB** — `profiles.expo_push_token` 컬럼 추가 (`fcm_token` 유지) | Supabase 마이그레이션 |
+| 3 | **Expo 설정** — `EXPO_ACCESS_TOKEN` 환경 변수 적용 | 웹 서버 발송 인증 |
+| 4 | **lib/expoPush.ts** — sendExpoPushToUser 유틸 | 토큰 없음/실패 시 no-op 또는 로그만 |
+| 5 | **API** — `POST /api/profile/expo-push-token` 추가 | 고정 스펙/422 검증/0-row 방지 포함 |
+| 6 | **API** — POST review-comments 내 Expo Push 호출 | 댓글 알림 |
 | 7 | **API** — POST reviews/[id]/like 신규 + 클라이언트 변경 | 리뷰 좋아요 알림 |
 | 8 | **API** — POST review-comments/[id]/like 신규 + 클라이언트 변경 | 댓글 좋아요 알림 |
+| 9 | **해제 이벤트** — `logout`/`account_deleted` + `version:1` 송신 고정 | `app/profile/menu/page.tsx`, `app/auth/kakao/logout/callback/page.tsx` |
+| 10 | **문서 동기화/검증** — API 응답 + DB 반영 확인 | 200 응답만으로 완료 판정 금지 |
 
 ---
 
 ## 4. RN 측에 전달할 정보 (구현 후)
 
 - **햅틱:** 웹에서 `type: 'haptic'` postMessage 전송. RN은 `onMessage`에서 수신 시 네이티브 햅틱 호출.
-- **FCM 토큰 등록:** `PATCH /api/profile` (또는 `POST /api/profile/fcm-token`) 요청 스펙·인증 방식.
-- **푸시 payload:** `data.link` 등 필드 정의. 알림 탭 시 해당 URL로 WebView 로드.
+- **해제 이벤트:** `logout`/`account_deleted`와 `version:1` 포맷 고정.
+- **Expo 토큰 등록:** `POST /api/profile/expo-push-token` 요청/응답/에러 스펙.
+- **푸시 payload:** `data.link` 절대 URL 고정. 알림 탭 시 해당 URL로 WebView 로드.
+- **토큰 정책:** 단일 컬럼(마지막 로그인 기기만 수신), 로그아웃/탈퇴 시 `expo_push_token: ""` 전송.
+- **발급 정합성:** `Notifications.getExpoPushTokenAsync({ projectId })`의 `projectId`와 RN `app.json > extra.eas.projectId` 일치.
 
-이 계획대로 진행하면, RN 개발자 전달 전에 웹에서 “햅틱용 postMessage”와 “알림 배너용 FCM 호출”까지 마이발레 쪽에서 구현할 수 있다.
+## 5. QA/운영 검증 기준 (웹 기준)
+
+### 5.1 완료 판정
+
+- 1단계: API 응답 성공
+- 2단계: DB 실제 반영 확인 (필수)
+
+### 5.2 운영 점검 SQL
+
+- 토큰 보유 현황:
+  - `select count(*) filter (where expo_push_token is not null and btrim(expo_push_token) <> '') from public.profiles;`
+- orphan 점검:
+  - `select count(*) from auth.users u left join public.profiles p on p.id=u.id where p.id is null;`
+
+### 5.3 시나리오
+
+- 로그인 후 `profiles.expo_push_token` 저장 확인
+- 로그아웃/탈퇴 메시지 수신 후 `profiles.expo_push_token`이 `null`인지 확인
+- API 200이어도 DB 미반영이면 실패로 판정
+- 형식 오류 토큰 요청 시 `422` 확인
+- RN 토큰 발급 시 `Notifications.getExpoPushTokenAsync({ projectId })` 사용 확인
+- 사용 `projectId`와 RN `app.json > extra.eas.projectId` 일치 확인
+
+## 6. 정리 컷오버
+
+- 안정화 확인 후 기존 FCM 경로 완전 제거:
+  - `profiles.fcm_token` 컬럼 제거
+  - `app/api/profile/fcm-token/route.ts` 삭제
+  - `lib/fcm.ts` 삭제
+  - `firebase-admin` 의존성 제거 및 관련 env 문서 정리
+- 제거 시점 조건:
+  - RN 배포/웹 배포 완료
+  - 통합 검증(토큰 등록/3개 알림 트리거/토큰 해제) 완료

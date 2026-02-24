@@ -8,8 +8,8 @@
 
 | 문서 | 용도 |
 |------|------|
-| [rn_webview_integration.md](rn_webview_integration.md) | RN↔웹 연동 요구사항(URL, OAuth, 백버튼, 외부 링크, postMessage, FCM) |
-| [rn_webview_integration_plan.md](rn_webview_integration_plan.md) | 웹 쪽 선행 구현(햅틱 postMessage, FCM 토큰·API·푸시 payload) |
+| [rn_webview_integration.md](rn_webview_integration.md) | RN↔웹 연동 요구사항(URL, OAuth, 백버튼, 외부 링크, postMessage, Expo Push) |
+| [rn_webview_integration_plan.md](rn_webview_integration_plan.md) | 웹 쪽 선행 구현(햅틱 postMessage, Expo Push 토큰·API·푸시 payload) |
 
 ---
 
@@ -19,7 +19,7 @@
 |------|------|------|
 | RN 생성 방식 | Expo (SDK 54) | 설정 단순, EAS 빌드, config plugin으로 iOS/Android 설정. |
 | WebView | **react-native-webview** | 연동 가이드 명시. Expo에서 지원. |
-| FCM / 푸시 | **expo-notifications** | Expo와 잘 맞고, Bare/이젝트 불필요. 푸시 토큰·수신·탭 시 URL 처리 가능. `@react-native-firebase`는 Bare용. |
+| Expo Push / 푸시 | **expo-notifications** | Expo와 잘 맞고, Bare/이젝트 불필요. 푸시 토큰·수신·탭 시 URL 처리 가능. |
 | 햅틱 | **expo-haptics** | Expo SDK 포함, 추가 네이티브 설정 없음. 웹 `type: 'haptic'` 수신 시 호출. |
 | 주소검색 | **@actbase/react-daum-postcode** | RN 모달에서 주소검색 후 WebView 브릿지로 결과 전달. |
 
@@ -33,19 +33,19 @@
 
 - 설정이 단순하고 EAS 빌드 사용 가능.
 - config plugin으로 iOS/Android(ATS, cleartext 등) 설정.
-- `expo-dev-client`로 네이티브 모듈(WebView, FCM 등) 사용.
+- `expo-dev-client`로 네이티브 모듈(WebView, 알림 등) 사용.
 
-### 2. FCM 토큰 등록 시 RN → 웹 API 인증
+### 2. Expo Push 토큰 등록 시 RN → 웹 API 인증
 
-**결정: POST /api/profile/fcm-token + Bearer(Supabase access_token)**
+**결정: POST /api/profile/expo-push-token + Bearer(Supabase access_token)**
 
-- 웹에는 **POST /api/profile/fcm-token** 엔드포인트만 있음. (PATCH /api/profile 아님.)
-- **URL:** `POST /api/profile/fcm-token`
+- 웹에는 **POST /api/profile/expo-push-token** 엔드포인트를 사용함.
+- **URL:** `POST /api/profile/expo-push-token`
 - **Headers:** `Authorization: Bearer <Supabase access_token>`
-- **Body:** `{ "fcm_token": "<FCM device token>" }`
+- **Body:** `{ "expo_push_token": "ExponentPushToken[...]" }`
 - RN: 로그인 이후 유효한 `access_token`을 확보해 위 스펙으로 호출.
 - 웹 배포 기준 postMessage는 `type: 'haptic'`, `type: 'auth_token'`, `type: 'open_address_search'`를 사용한다.
-- RN은 `auth_token` 수신 시 FCM 토큰 등록 호출 흐름에 사용한다.
+- RN은 `auth_token` 수신 시 Expo Push 토큰 등록 호출 흐름에 사용한다.
 
 ### 3. 딥링크 앱 스킴
 
