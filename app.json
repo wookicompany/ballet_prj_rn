@@ -27,9 +27,9 @@
             }
           }
         },
-        "NSCameraUsageDescription": "사진을 촬영하려면 카메라 권한이 필요해요.",
-        "NSPhotoLibraryUsageDescription": "사진을 선택해 업로드하려면 사진 보관함 권한이 필요해요.",
-        "NSPhotoLibraryAddUsageDescription": "촬영한 사진을 저장하려면 사진 보관함 권한이 필요해요.",
+        "NSCameraUsageDescription": "발레 기록과 공연 리뷰 작성 시 사진을 촬영해 업로드할 수 있도록 카메라 접근 권한이 필요해요.",
+        "NSPhotoLibraryUsageDescription": "발레 기록과 공연 리뷰 작성 시 앨범에서 사진을 선택해 업로드할 수 있도록 사진 보관함 접근 권한이 필요해요.",
+        "NSPhotoLibraryAddUsageDescription": "앱에서 촬영한 사진을 기기에 저장할 수 있도록 사진 보관함 저장 권한이 필요해요.",
         "CFBundleLocalizations": ["ko", "en"],
         "ITSAppUsesNonExemptEncryption": false
       }
