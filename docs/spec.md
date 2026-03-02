@@ -23,7 +23,7 @@
 | 햅틱 | **expo-haptics** | Expo SDK 포함, 추가 네이티브 설정 없음. 웹 `type: 'haptic'` 수신 시 호출. |
 | 주소검색 | **@actbase/react-daum-postcode** | RN 모달에서 주소검색 후 WebView 브릿지로 결과 전달. |
 
-**정리:** Expo 워크플로우 유지 시 FCM은 expo-notifications, 햅틱은 expo-haptics.
+**정리:** Expo 워크플로우 유지 시 푸시는 expo-notifications, 햅틱은 expo-haptics.
 
 ---
 
@@ -33,7 +33,7 @@
 
 - 설정이 단순하고 EAS 빌드 사용 가능.
 - config plugin으로 iOS/Android(ATS, cleartext 등) 설정.
-- `expo-dev-client`로 네이티브 모듈(WebView, 알림 등) 사용.
+- WebView/알림 등 네이티브 모듈은 Expo SDK 호환 범위에서 사용하며, 필요 시 Dev Build(`expo-dev-client`)를 활용한다.
 
 ### 2. Expo Push 토큰 등록 시 RN → 웹 API 인증
 
