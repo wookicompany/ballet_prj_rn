@@ -157,9 +157,14 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
     return () => sub.remove();
   }, [canGoBack, isAddressSearchOpen]);
 
+  const safeAreaEdges =
+    Platform.OS === 'ios'
+      ? (['top', 'bottom', 'left', 'right'] as const)
+      : (['top', 'left', 'right'] as const);
+
   return (
     <View style={styles.wrapper}>
-      <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
+      <SafeAreaView style={styles.container} edges={safeAreaEdges}>
         {foregroundNotification ? (
           <NotificationBanner
             title={foregroundNotification.title}
