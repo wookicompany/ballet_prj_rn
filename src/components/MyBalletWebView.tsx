@@ -110,12 +110,18 @@ export function MyBalletWebView({
         onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
         onNavigationStateChange={onNavigationStateChange}
         onLoadEnd={onLoadEnd}
+        onError={(event) => {
+          console.warn('[WebView] load error', event.nativeEvent);
+        }}
+        onHttpError={(event) => {
+          console.warn('[WebView] http error', event.nativeEvent);
+        }}
         javaScriptEnabled
         domStorageEnabled
         sharedCookiesEnabled
         originWhitelist={['https://*', 'http://*']}
         {...(Platform.OS === 'android' && {
-          mixedContentMode: 'compatibility' as const,
+          mixedContentMode: 'always' as const,
         })}
       />
     </View>
