@@ -2,7 +2,7 @@
   "expo": {
     "name": "마이발레",
     "slug": "ballet-prj-rn",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "myballet",
