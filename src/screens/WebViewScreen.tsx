@@ -11,6 +11,8 @@ import { useWebViewMessage } from '../hooks/useWebViewMessage';
 import { registerExpoPushToken } from '../services/expoPush';
 import { useWebViewUrl } from '../hooks/useWebViewUrl';
 import type { WebView } from 'react-native-webview';
+import { requestHealthSync } from '../services/healthSync';
+import type { HealthSyncRequestPayload, PlatformInfoPayload } from '../types/messaging';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -37,6 +39,7 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
   const webViewRef = useRef<WebView>(null);
   const lastAccessTokenRef = useRef<string | null>(null);
   const isInitialWebViewReadyNotifiedRef = useRef(false);
+  const healthSyncInFlightRef = useRef(false);
 
   useEffect(() => {
     if (accessToken) {
@@ -68,10 +71,49 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
   const handleOpenAddressSearch = useCallback(() => {
     setIsAddressSearchOpen(true);
   }, []);
+  const postMessageToWeb = useCallback((payload: object) => {
+    webViewRef.current?.postMessage?.(JSON.stringify(payload));
+  }, []);
+
+  const handleHealthSyncRequest = useCallback(async (payload: HealthSyncRequestPayload) => {
+    if (healthSyncInFlightRef.current) {
+      postMessageToWeb({
+        type: 'health_sync_result',
+        version: 1,
+        request_id: payload.request_id,
+        status: 'error',
+        code: 'QUERY_FAILED',
+        message: 'Another health sync is already in progress.',
+      });
+      return;
+    }
+
+    if (Platform.OS !== 'ios') {
+      postMessageToWeb({
+        type: 'health_sync_result',
+        version: 1,
+        request_id: payload.request_id,
+        status: 'error',
+        code: 'NO_PERMISSION',
+        message: 'iOS(Apple Watch)에서만 연동 가능해요.',
+      });
+      return;
+    }
+
+    healthSyncInFlightRef.current = true;
+    try {
+      const result = await requestHealthSync(payload);
+      postMessageToWeb(result);
+    } finally {
+      healthSyncInFlightRef.current = false;
+    }
+  }, [postMessageToWeb]);
+
   const onMessage = useWebViewMessage({
     onAuthToken: handleAuthToken,
     onOpenAddressSearch: handleOpenAddressSearch,
     onSessionTerminated: clearRegisteredExpoPushToken,
+    onHealthSyncRequest: handleHealthSyncRequest,
   });
   useExpoPushToken(accessToken);
 
@@ -92,9 +134,20 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
 
   const handleWebViewLoadEnd = useCallback(() => {
     if (isInitialWebViewReadyNotifiedRef.current) return;
+
+    if (Platform.OS === 'ios') {
+      const platformInfo: PlatformInfoPayload = {
+        type: 'platform_info',
+        version: 1,
+        platform: 'ios',
+        health_provider: 'healthkit',
+      };
+      postMessageToWeb(platformInfo);
+    }
+
     isInitialWebViewReadyNotifiedRef.current = true;
     onInitialWebViewReady?.();
-  }, [onInitialWebViewReady]);
+  }, [onInitialWebViewReady, postMessageToWeb]);
 
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {

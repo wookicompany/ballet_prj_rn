@@ -1,17 +1,20 @@
 import { useCallback } from 'react';
 import * as Haptics from 'expo-haptics';
 import { parseWebMessage } from '../types/messaging';
+import type { HealthSyncRequestPayload } from '../types/messaging';
 
 interface UseWebViewMessageOptions {
   onAuthToken?: (accessToken: string) => void;
   onOpenAddressSearch?: () => void;
   onSessionTerminated?: (eventType: 'logout' | 'account_deleted') => void;
+  onHealthSyncRequest?: (payload: HealthSyncRequestPayload) => void;
 }
 
 export function useWebViewMessage({
   onAuthToken,
   onOpenAddressSearch,
   onSessionTerminated,
+  onHealthSyncRequest,
 }: UseWebViewMessageOptions = {}) {
   const handleMessage = useCallback((event: { nativeEvent: { data: string } }) => {
     const payload = parseWebMessage(event.nativeEvent.data);
@@ -34,8 +37,13 @@ export function useWebViewMessage({
 
     if (payload.type === 'logout' || payload.type === 'account_deleted') {
       onSessionTerminated?.(payload.type);
+      return;
     }
-  }, [onAuthToken, onOpenAddressSearch, onSessionTerminated]);
+
+    if (payload.type === 'health_sync_request') {
+      onHealthSyncRequest?.(payload);
+    }
+  }, [onAuthToken, onOpenAddressSearch, onSessionTerminated, onHealthSyncRequest]);
 
   return handleMessage;
 }

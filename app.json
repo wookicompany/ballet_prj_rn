@@ -2,7 +2,7 @@
   "expo": {
     "name": "마이발레",
     "slug": "ballet-prj-rn",
-    "version": "1.1.1",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "myballet",
@@ -44,6 +44,13 @@
     },
     "plugins": [
       "expo-notifications",
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "발레 기록 작성 시 발레 바 운동에 대한 건강 데이터를 읽기 위해 권한이 필요해요.",
+          "NSHealthUpdateUsageDescription": "발레 기록 작성 시 발레 바 운동에 대한 건강 데이터를 쓰기 위해 권한이 필요해요."
+        }
+      ],
       [
         "expo-splash-screen",
         {

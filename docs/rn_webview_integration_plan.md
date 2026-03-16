@@ -153,6 +153,19 @@
 - **토큰 정책:** 단일 컬럼(마지막 로그인 기기만 수신), 로그아웃/탈퇴 시 `expo_push_token: ""` 전송.
 - **발급 정합성:** `Notifications.getExpoPushTokenAsync({ projectId })`의 `projectId`와 RN `app.json > extra.eas.projectId` 일치.
 
+### 4.1 Apple Watch(HealthKit) 브릿지 계약 (iOS 전용)
+
+- 초기 이벤트(로드 완료 1회):
+  - `{ "type": "platform_info", "version": 1, "platform": "ios", "health_provider": "healthkit" }`
+- 웹 요청:
+  - `{ "type": "health_sync_request", "version": 1, "request_id": "<id>", "date": "YYYY-MM-DD", "activity": "barre" }`
+- RN 응답(success):
+  - `workout.activity_label`, `source_name`, `device_name`, `total_energy_kcal`, `avg_bpm`, `max_bpm` (키 고정, 값 nullable)
+  - `active_energy_kcal`은 활동 칼로리 값으로 지속 제공
+- RN 응답(error):
+  - `NO_PERMISSION | NO_DATA | TIMEOUT | QUERY_FAILED`
+  - 데이터 없음은 반드시 `{ "status": "error", "code": "NO_DATA" }`
+
 ## 5. QA/운영 검증 기준 (웹 기준)
 
 ### 5.1 완료 판정

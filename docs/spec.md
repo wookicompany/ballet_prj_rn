@@ -85,3 +85,35 @@
 
 - Google 외부 브라우저 로그인 후 앱 복귀를 위해 OAuth redirect URL에 앱 스킴(`myballet://...`) 연동을 확정한다.
 - 주소검색 브릿지 2차 확장 필요 시 `zonecode` 등 추가 필드 전달을 검토한다.
+
+---
+
+## 5. Apple Watch 연동 (iOS 전용)
+
+### 5.1 범위/환경
+
+- 지원 범위는 **iOS WebView + HealthKit** 전용으로 고정한다.
+- HealthKit 라이브러리는 `@kingstinct/react-native-healthkit`를 사용한다.
+- Expo Go에서는 동작하지 않으므로 `expo-dev-client` 기반 Dev Build로 검증한다.
+
+### 5.2 브릿지 계약 (고정)
+
+- 앱 로드 완료 시 1회 전송:
+  - `{ "type": "platform_info", "version": 1, "platform": "ios", "health_provider": "healthkit" }`
+- 웹 요청:
+  - `{ "type": "health_sync_request", "version": 1, "request_id": "<id>", "date": "YYYY-MM-DD", "activity": "barre" }`
+- 앱 응답:
+  - `type: "health_sync_result"`, `version: 1`, `request_id`, `status`
+  - `status: "success"`일 때 `workout` 데이터 반환
+  - `status: "error"`일 때 `code`, `message` 반환
+
+### 5.3 데이터/에러 정책
+
+- 조회 정책: `barre`, KST 하루 범위, 최신 1건
+- 응답 키(고정, nullable):
+  - `activity_label`, `source_name`, `device_name`, `total_energy_kcal`, `avg_bpm`, `max_bpm`
+- 칼로리 필드 운영:
+  - `total_energy_kcal`(총 칼로리)와 `active_energy_kcal`(활동 칼로리)를 함께 계속 제공
+- 에러코드:
+  - `NO_PERMISSION`, `NO_DATA`, `TIMEOUT`, `QUERY_FAILED`
+  - 데이터 없음은 반드시 `{ "status": "error", "code": "NO_DATA" }`
