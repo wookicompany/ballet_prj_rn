@@ -10,6 +10,68 @@ import {
 } from '../constants/config';
 import { openExternalUrl } from '../services/linking';
 
+const INJECTED_BRIDGE_GUARD_JS = `
+  (function() {
+    if (window.__MYBALLET_RN_BRIDGE_GUARD__) return;
+    window.__MYBALLET_RN_BRIDGE_GUARD__ = true;
+
+    var originalOpen = window.open;
+    window.open = function(url, target, features) {
+      if (typeof url === 'string' && url.length > 0) {
+        window.location.href = url;
+      }
+      return null;
+    };
+
+    document.addEventListener('click', function(event) {
+      var node = event && event.target;
+      while (node && node.tagName !== 'A') {
+        node = node.parentElement;
+      }
+      if (!node) return;
+      if (node.target === '_blank') {
+        node.target = '_self';
+      }
+    }, true);
+
+    var queue = [];
+    function sendNow(message) {
+      if (window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage === 'function') {
+        window.ReactNativeWebView.postMessage(message);
+        return true;
+      }
+      return false;
+    }
+
+    var fallbackBridge = {
+      postMessage: function(message) {
+        var safeMessage = String(message);
+        if (!sendNow(safeMessage)) {
+          queue.push(safeMessage);
+        }
+      }
+    };
+
+    if (!window.ReactNativeWebView || typeof window.ReactNativeWebView.postMessage !== 'function') {
+      window.ReactNativeWebView = fallbackBridge;
+    }
+
+    var flushAttempts = 0;
+    var maxFlushAttempts = 200;
+    var flushTimer = setInterval(function() {
+      flushAttempts += 1;
+      if (!window.ReactNativeWebView || typeof window.ReactNativeWebView.postMessage !== 'function') return;
+      while (queue.length > 0) {
+        window.ReactNativeWebView.postMessage(queue.shift());
+      }
+      if (flushAttempts >= maxFlushAttempts || queue.length === 0) {
+        clearInterval(flushTimer);
+      }
+    }, 50);
+  })();
+  true;
+`;
+
 interface MyBalletWebViewProps {
   url: string;
   onMessage?: (event: { nativeEvent: { data: string } }) => void;
@@ -106,6 +168,7 @@ export function MyBalletWebView({
         ref={webViewRef}
         source={{ uri: url }}
         style={styles.webview}
+        injectedJavaScriptBeforeContentLoaded={INJECTED_BRIDGE_GUARD_JS}
         onMessage={onMessage}
         onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
         onNavigationStateChange={onNavigationStateChange}
@@ -117,8 +180,10 @@ export function MyBalletWebView({
           console.warn('[WebView] http error', event.nativeEvent);
         }}
         javaScriptEnabled
+        javaScriptCanOpenWindowsAutomatically={false}
         domStorageEnabled
         sharedCookiesEnabled
+        setSupportMultipleWindows={false}
         originWhitelist={['https://*', 'http://*']}
         {...(Platform.OS === 'android' && {
           mixedContentMode: 'always' as const,
