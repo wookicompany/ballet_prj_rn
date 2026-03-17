@@ -74,7 +74,15 @@ async function queryWorkoutActiveEnergyKcal(workout: QueriedWorkout): Promise<nu
   return toRounded(typeof sumQuantity === 'number' ? sumQuantity : null);
 }
 
-function queryWorkoutTotalEnergyKcal(workout: QueriedWorkout): number | null {
+async function queryWorkoutBasalEnergyKcal(workout: QueriedWorkout): Promise<number | null> {
+  const statistics: QueryStatisticsResponse | undefined = await withTimeout(
+    workout.getStatistic('HKQuantityTypeIdentifierBasalEnergyBurned', ENERGY_UNIT),
+  );
+  const sumQuantity = statistics?.sumQuantity?.quantity;
+  return toRounded(typeof sumQuantity === 'number' ? sumQuantity : null);
+}
+
+function queryWorkoutFallbackTotalEnergyKcal(workout: QueriedWorkout): number | null {
   return toRounded(normalizeEnergyToKcal(workout.totalEnergyBurned?.quantity, workout.totalEnergyBurned?.unit));
 }
 
@@ -98,7 +106,12 @@ export async function requestHealthSync(
 
     const authorized = await withTimeout(
       requestAuthorization({
-        toRead: [WorkoutTypeIdentifier, 'HKQuantityTypeIdentifierHeartRate', 'HKQuantityTypeIdentifierActiveEnergyBurned'],
+        toRead: [
+          WorkoutTypeIdentifier,
+          'HKQuantityTypeIdentifierHeartRate',
+          'HKQuantityTypeIdentifierActiveEnergyBurned',
+          'HKQuantityTypeIdentifierBasalEnergyBurned',
+        ],
       }),
     );
     if (!authorized) {
@@ -128,7 +141,11 @@ export async function requestHealthSync(
     }
 
     const activeEnergyKcal = await queryWorkoutActiveEnergyKcal(workout);
-    const totalEnergyKcal = queryWorkoutTotalEnergyKcal(workout);
+    const basalEnergyKcal = await queryWorkoutBasalEnergyKcal(workout);
+    const totalEnergyKcal =
+      activeEnergyKcal != null || basalEnergyKcal != null
+        ? toRounded((activeEnergyKcal ?? 0) + (basalEnergyKcal ?? 0))
+        : queryWorkoutFallbackTotalEnergyKcal(workout);
     const { avgBpm, maxBpm } = await queryWorkoutHeartRate(workout);
     const sourceName = workout.sourceRevision?.source?.name ?? null;
     const deviceName = workout.device?.name ?? workout.metadataDeviceName ?? null;
