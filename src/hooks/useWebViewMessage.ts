@@ -5,14 +5,12 @@ import type { HealthSyncRequestPayload } from '../types/messaging';
 
 interface UseWebViewMessageOptions {
   onAuthToken?: (accessToken: string) => void;
-  onOpenAddressSearch?: () => void;
   onSessionTerminated?: (eventType: 'logout' | 'account_deleted') => void;
   onHealthSyncRequest?: (payload: HealthSyncRequestPayload) => void;
 }
 
 export function useWebViewMessage({
   onAuthToken,
-  onOpenAddressSearch,
   onSessionTerminated,
   onHealthSyncRequest,
 }: UseWebViewMessageOptions = {}) {
@@ -30,11 +28,6 @@ export function useWebViewMessage({
       return;
     }
 
-    if (payload.type === 'open_address_search') {
-      onOpenAddressSearch?.();
-      return;
-    }
-
     if (payload.type === 'logout' || payload.type === 'account_deleted') {
       onSessionTerminated?.(payload.type);
       return;
@@ -43,7 +36,7 @@ export function useWebViewMessage({
     if (payload.type === 'health_sync_request') {
       onHealthSyncRequest?.(payload);
     }
-  }, [onAuthToken, onOpenAddressSearch, onSessionTerminated, onHealthSyncRequest]);
+  }, [onAuthToken, onSessionTerminated, onHealthSyncRequest]);
 
   return handleMessage;
 }

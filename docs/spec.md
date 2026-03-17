@@ -21,7 +21,7 @@
 | WebView | **react-native-webview** | 연동 가이드 명시. Expo에서 지원. |
 | Expo Push / 푸시 | **expo-notifications** | Expo와 잘 맞고, Bare/이젝트 불필요. 푸시 토큰·수신·탭 시 URL 처리 가능. |
 | 햅틱 | **expo-haptics** | Expo SDK 포함, 추가 네이티브 설정 없음. 웹 `type: 'haptic'` 수신 시 호출. |
-| 주소검색 | **@actbase/react-daum-postcode** | RN 모달에서 주소검색 후 WebView 브릿지로 결과 전달. |
+| 주소검색 | **웹(Kakao Postcode embed)** | 주소검색은 웹 레이어에서 직접 처리하고 RN 브릿지는 사용하지 않음. |
 
 **정리:** Expo 워크플로우 유지 시 푸시는 expo-notifications, 햅틱은 expo-haptics.
 
@@ -44,7 +44,7 @@
 - **Headers:** `Authorization: Bearer <Supabase access_token>`
 - **Body:** `{ "expo_push_token": "ExponentPushToken[...]" }`
 - RN: 로그인 이후 유효한 `access_token`을 확보해 위 스펙으로 호출.
-- 웹 배포 기준 postMessage는 `type: 'haptic'`, `type: 'auth_token'`, `type: 'open_address_search'`를 사용한다.
+- 웹 배포 기준 postMessage는 `type: 'haptic'`, `type: 'auth_token'`를 사용한다.
 - RN은 `auth_token` 수신 시 Expo Push 토큰 등록 호출 흐름에 사용한다.
 
 ### 3. 딥링크 앱 스킴
@@ -64,27 +64,25 @@
 | 로그인 | WebView 내 OAuth, RN 토큰 전달 불필요 |
 | 백 버튼 | WebView `goBack()` 우선, 없으면 앱 네비 |
 | 외부 링크 | OAuth 허용 도메인(`myballet`, `supabase`, `kakao`, `apple`)은 WebView 유지, Google OAuth(`accounts.google.com`)는 정책상 외부 브라우저로 처리, 그 외·tel·mailto는 브라우저/앱 |
-| postMessage | 웹→RN `type: 'haptic'`, `type: 'auth_token'`, `type: 'open_address_search'` 수신 처리 |
+| postMessage | 웹→RN `type: 'haptic'`, `type: 'auth_token'` 수신 처리 |
 | 푸시 | expo-notifications, 알림 탭 시 `data.link` 로 WebView URL 변경 |
 | 딥링크 | 스킴 **myballet://** |
 
 ---
 
-## 4. 주소검색 브릿지 (RN WebView)
+## 4. 주소검색 정책
 
-**결정: WebView 브릿지 + RN 주소검색 모달**
+**결정: 웹 단독 구현**
 
-- 웹에서 `open_address_search` 메시지 수신 시 RN이 네이티브 주소검색 모달을 연다.
-- 주소 선택 시 RN이 `address_selected`를 `postMessage`로 웹에 전달한다.
-- 1차 반환 필드는 `address`, `roadAddress`, `jibunAddress`만 사용한다.
-- 취소/파싱 실패는 no-op 처리한다.
+- 주소검색은 웹에서 Kakao Postcode(임베드/레이어)로 직접 처리한다.
+- RN은 주소검색 전용 브릿지(`open_address_search`, `address_selected`)를 사용하지 않는다.
 
 ---
 
 ## 다음 단계
 
 - Google 외부 브라우저 로그인 후 앱 복귀를 위해 OAuth redirect URL에 앱 스킴(`myballet://...`) 연동을 확정한다.
-- 주소검색 브릿지 2차 확장 필요 시 `zonecode` 등 추가 필드 전달을 검토한다.
+- 주소검색 세부 UX/필드 확장은 웹 저장소에서 관리한다.
 
 ---
 

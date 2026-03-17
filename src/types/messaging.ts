@@ -50,7 +50,6 @@ export interface HealthSyncResultErrorPayload {
 export type WebToRNMessage =
   | { type: 'haptic' }
   | { type: 'auth_token'; access_token: string }
-  | { type: 'open_address_search' }
   | { type: 'logout'; version: 1 }
   | { type: 'account_deleted'; version: 1 }
   | HealthSyncRequestPayload;
@@ -79,10 +78,6 @@ export function parseWebMessage(data: string): WebToRNMessage | null {
       if (token.length > 0) {
         return { type: 'auth_token', access_token: token };
       }
-    }
-
-    if (parsed.type === 'open_address_search') {
-      return { type: 'open_address_search' };
     }
 
     if (parsed.type === 'health_sync_request') {

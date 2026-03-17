@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
-import { AddressSearchModal, type AddressSelectedPayload } from '../components/AddressSearchModal';
 import { MyBalletWebView } from '../components/MyBalletWebView';
 import { NotificationBanner } from '../components/NotificationBanner';
 import { WEBVIEW_ORIGIN } from '../constants/config';
@@ -33,7 +32,6 @@ interface WebViewScreenProps {
 export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
   const { url, setUrl } = useWebViewUrl();
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [isAddressSearchOpen, setIsAddressSearchOpen] = useState(false);
   const [canGoBack, setCanGoBack] = useState(false);
   const [foregroundNotification, setForegroundNotification] = useState<ForegroundNotification>(null);
   const webViewRef = useRef<WebView>(null);
@@ -68,9 +66,6 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
     }
   }, [accessToken]);
 
-  const handleOpenAddressSearch = useCallback(() => {
-    setIsAddressSearchOpen(true);
-  }, []);
   const postMessageToWeb = useCallback((payload: object) => {
     webViewRef.current?.postMessage?.(JSON.stringify(payload));
   }, []);
@@ -127,22 +122,10 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
 
   const onMessage = useWebViewMessage({
     onAuthToken: handleAuthToken,
-    onOpenAddressSearch: handleOpenAddressSearch,
     onSessionTerminated: clearRegisteredExpoPushToken,
     onHealthSyncRequest: handleHealthSyncRequest,
   });
   useExpoPushToken(accessToken);
-
-  const handleAddressSelected = useCallback((payload: AddressSelectedPayload) => {
-    webViewRef.current?.postMessage?.(
-      JSON.stringify({
-        type: 'address_selected',
-        address: payload.address,
-        roadAddress: payload.roadAddress,
-        jibunAddress: payload.jibunAddress,
-      }),
-    );
-  }, []);
 
   const onNavigationStateChange = useCallback((nav: { canGoBack?: boolean }) => {
     setCanGoBack(nav.canGoBack ?? false);
@@ -204,10 +187,6 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
   React.useEffect(() => {
     if (Platform.OS !== 'android') return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (isAddressSearchOpen) {
-        setIsAddressSearchOpen(false);
-        return true;
-      }
       if (canGoBack) {
         webViewRef.current?.goBack?.();
       } else {
@@ -216,7 +195,7 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
       return true;
     });
     return () => sub.remove();
-  }, [canGoBack, isAddressSearchOpen]);
+  }, [canGoBack]);
 
   const safeAreaEdges =
     Platform.OS === 'ios'
@@ -242,11 +221,6 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
           onMessage={onMessage}
           onNavigationStateChange={onNavigationStateChange}
           onLoadEnd={handleWebViewLoadEnd}
-        />
-        <AddressSearchModal
-          visible={isAddressSearchOpen}
-          onClose={() => setIsAddressSearchOpen(false)}
-          onSelected={handleAddressSelected}
         />
       </SafeAreaView>
     </View>
