@@ -66,13 +66,15 @@ function toRounded(value: number | null): number | null {
 
 type QueriedWorkout = Awaited<ReturnType<typeof queryWorkoutSamples>>[number];
 
-async function queryWorkoutEnergyKcal(workout: QueriedWorkout): Promise<number | null> {
+async function queryWorkoutActiveEnergyKcal(workout: QueriedWorkout): Promise<number | null> {
   const statistics: QueryStatisticsResponse | undefined = await withTimeout(
     workout.getStatistic('HKQuantityTypeIdentifierActiveEnergyBurned', ENERGY_UNIT),
   );
   const sumQuantity = statistics?.sumQuantity?.quantity;
-  const fromStats = typeof sumQuantity === 'number' ? sumQuantity : null;
-  if (fromStats != null) return toRounded(fromStats);
+  return toRounded(typeof sumQuantity === 'number' ? sumQuantity : null);
+}
+
+function queryWorkoutTotalEnergyKcal(workout: QueriedWorkout): number | null {
   return toRounded(normalizeEnergyToKcal(workout.totalEnergyBurned?.quantity, workout.totalEnergyBurned?.unit));
 }
 
@@ -125,7 +127,8 @@ export async function requestHealthSync(
       throw new HealthSyncError('NO_DATA', 'No barre workout found for this date.');
     }
 
-    const totalEnergyKcal = await queryWorkoutEnergyKcal(workout);
+    const activeEnergyKcal = await queryWorkoutActiveEnergyKcal(workout);
+    const totalEnergyKcal = queryWorkoutTotalEnergyKcal(workout);
     const { avgBpm, maxBpm } = await queryWorkoutHeartRate(workout);
     const sourceName = workout.sourceRevision?.source?.name ?? null;
     const deviceName = workout.device?.name ?? workout.metadataDeviceName ?? null;
@@ -143,7 +146,7 @@ export async function requestHealthSync(
         total_energy_kcal: totalEnergyKcal,
         avg_bpm: avgBpm,
         max_bpm: maxBpm,
-        active_energy_kcal: totalEnergyKcal,
+        active_energy_kcal: activeEnergyKcal,
       },
     };
   } catch (error: unknown) {
