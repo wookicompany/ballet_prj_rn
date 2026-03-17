@@ -26,8 +26,8 @@ export interface HealthSyncRequestPayload {
 export interface PlatformInfoPayload {
   type: 'platform_info';
   version: 1;
-  platform: 'ios';
-  health_provider: 'healthkit';
+  platform: 'ios' | 'android';
+  health_provider: 'healthkit' | 'health_connect' | 'none';
 }
 
 export interface HealthSyncResultSuccessPayload {

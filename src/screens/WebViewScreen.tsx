@@ -74,6 +74,22 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
   const postMessageToWeb = useCallback((payload: object) => {
     webViewRef.current?.postMessage?.(JSON.stringify(payload));
   }, []);
+  const postPlatformInfo = useCallback(() => {
+    const platform = Platform.OS === 'ios' ? 'ios' : 'android';
+    const healthProvider = platform === 'ios' ? 'healthkit' : 'none';
+    const platformInfo: PlatformInfoPayload = {
+      type: 'platform_info',
+      version: 1,
+      platform,
+      health_provider: healthProvider,
+    };
+    const send = (attempt: 'initial') => {
+      console.info('[WebViewBridge] Sending platform_info', { attempt, payload: platformInfo });
+      postMessageToWeb(platformInfo);
+    };
+
+    send('initial');
+  }, [postMessageToWeb]);
 
   const handleHealthSyncRequest = useCallback(async (payload: HealthSyncRequestPayload) => {
     if (healthSyncInFlightRef.current) {
@@ -133,21 +149,13 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
   }, []);
 
   const handleWebViewLoadEnd = useCallback(() => {
-    if (isInitialWebViewReadyNotifiedRef.current) return;
+    postPlatformInfo();
 
-    if (Platform.OS === 'ios') {
-      const platformInfo: PlatformInfoPayload = {
-        type: 'platform_info',
-        version: 1,
-        platform: 'ios',
-        health_provider: 'healthkit',
-      };
-      postMessageToWeb(platformInfo);
-    }
+    if (isInitialWebViewReadyNotifiedRef.current) return;
 
     isInitialWebViewReadyNotifiedRef.current = true;
     onInitialWebViewReady?.();
-  }, [onInitialWebViewReady, postMessageToWeb]);
+  }, [onInitialWebViewReady, postPlatformInfo]);
 
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
