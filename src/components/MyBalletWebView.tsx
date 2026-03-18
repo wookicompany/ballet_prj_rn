@@ -185,6 +185,7 @@ export function MyBalletWebView({
         sharedCookiesEnabled
         setSupportMultipleWindows={false}
         originWhitelist={['https://*', 'http://*']}
+        bounces={false}
         {...(Platform.OS === 'android' && {
           mixedContentMode: 'always' as const,
         })}
