@@ -186,6 +186,7 @@ export function MyBalletWebView({
         setSupportMultipleWindows={false}
         originWhitelist={['https://*', 'http://*']}
         bounces={false}
+        automaticallyAdjustKeyboardInsets={true}
         {...(Platform.OS === 'android' && {
           mixedContentMode: 'always' as const,
         })}
