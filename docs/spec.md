@@ -21,9 +21,10 @@
 | WebView | **react-native-webview** | 연동 가이드 명시. Expo에서 지원. |
 | Expo Push / 푸시 | **expo-notifications** | Expo와 잘 맞고, Bare/이젝트 불필요. 푸시 토큰·수신·탭 시 URL 처리 가능. |
 | 햅틱 | **expo-haptics** | Expo SDK 포함, 추가 네이티브 설정 없음. 웹 `type: 'haptic'` 수신 시 호출. |
+| 인앱 브라우저 | **expo-web-browser** | 웹 `type: 'open_url'` 수신 시 호출. iOS SFSafariViewController / Android Chrome Custom Tabs. |
 | 주소검색 | **웹(Kakao Postcode embed)** | 주소검색은 웹 레이어에서 직접 처리하고 RN 브릿지는 사용하지 않음. |
 
-**정리:** Expo 워크플로우 유지 시 푸시는 expo-notifications, 햅틱은 expo-haptics.
+**정리:** Expo 워크플로우 유지 시 푸시는 expo-notifications, 햅틱은 expo-haptics, 인앱 브라우저는 expo-web-browser.
 
 ---
 
@@ -64,7 +65,7 @@
 | 로그인 | WebView 내 OAuth, RN 토큰 전달 불필요 |
 | 백 버튼 | WebView `goBack()` 우선, 없으면 앱 네비 |
 | 외부 링크 | OAuth 허용 도메인(`myballet`, `supabase`, `kakao`, `apple`)은 WebView 유지, Google OAuth(`accounts.google.com`)는 정책상 외부 브라우저로 처리, 그 외·tel·mailto는 브라우저/앱 |
-| postMessage | 웹→RN `type: 'haptic'`, `type: 'auth_token'` 수신 처리 |
+| postMessage | 웹→RN `haptic`, `auth_token`, `logout`, `account_deleted`, `health_sync_request`, `open_url` 수신 처리 |
 | 푸시 | expo-notifications, 알림 탭 시 `data.link` 로 WebView URL 변경 |
 | 딥링크 | 스킴 **myballet://** |
 

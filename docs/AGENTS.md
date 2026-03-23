@@ -7,7 +7,7 @@
 - UI는 React Native 기본 컴포넌트와 프로젝트 공용 컴포넌트를 우선 활용한다.
 - 공통 UI는 `src/components/`에 재사용 가능 형태로 구성하고, 화면 전용 UI는 `src/screens/`에서만 사용한다.
 - 스타일은 `StyleSheet.create` 기반으로 작성하고, 인라인 스타일은 최소화한다.
-- 아이콘 사용 시 `lucide-react-native`를 기본으로 사용하고, 화면마다 라이브러리를 혼용하지 않는다.
+- 아이콘이 필요한 경우 `lucide-react-native`를 기본으로 사용하고, 화면마다 라이브러리를 혼용하지 않는다.
 - UI는 모바일 앱 사용성을 우선으로 구성한다.
 - 기본 텍스트 크기는 가독성을 해치지 않는 범위에서 일관되게 유지한다.
 - 입력/조회/보조 텍스트의 계층을 명확히 구분한다.
@@ -26,7 +26,8 @@
 - 네이티브 동작이 필요한 라이브러리 추가 시 Expo 호환성(Expo Go/Dev Build)을 먼저 확인한다.
 - WebView 연동은 `src/components/MyBalletWebView.tsx` 정책(내부 허용/외부 브라우저 분기)을 따른다.
 - WebView 브릿지 메시지 처리는 `src/hooks/useWebViewMessage.ts`를 통해 일관되게 확장한다.
-- 주소검색/푸시/햅틱 등 플랫폼 기능은 화면에 직접 분산하지 않고 훅/컴포넌트로 분리한다.
+- 주소검색/푸시/햅틱/인앱브라우저 등 플랫폼 기능은 화면에 직접 분산하지 않고 훅/컴포넌트로 분리한다.
+- 웹에서 전달한 URL을 인앱 브라우저로 열 때는 `expo-web-browser`의 `openBrowserAsync`를 사용한다.
 
 ## Supabase 규칙
 
