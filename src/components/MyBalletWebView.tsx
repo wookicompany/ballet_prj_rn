@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import {
@@ -138,7 +138,7 @@ export function MyBalletWebView({
   onLoadEnd,
   webViewRef,
 }: MyBalletWebViewProps) {
-  const handleShouldStartLoadWithRequest = (request: { url: string }) => {
+  const handleShouldStartLoadWithRequest = useCallback((request: { url: string }) => {
     if (onShouldStartLoadWithRequest && !onShouldStartLoadWithRequest(request)) {
       return false;
     }
@@ -160,7 +160,7 @@ export function MyBalletWebView({
       return false;
     }
     return true;
-  };
+  }, [onShouldStartLoadWithRequest]);
 
   return (
     <View style={styles.container}>
@@ -184,7 +184,7 @@ export function MyBalletWebView({
         domStorageEnabled
         sharedCookiesEnabled
         setSupportMultipleWindows={false}
-        originWhitelist={['https://*', 'http://*']}
+        originWhitelist={ORIGIN_WHITELIST}
         bounces={false}
         {...(Platform.OS === 'android' && {
           mixedContentMode: 'always' as const,
@@ -193,6 +193,8 @@ export function MyBalletWebView({
     </View>
   );
 }
+
+const ORIGIN_WHITELIST = ['https://*', 'http://*'];
 
 const styles = StyleSheet.create({
   container: {

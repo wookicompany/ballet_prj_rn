@@ -26,6 +26,10 @@ Notifications.setNotificationHandler({
 
 type ForegroundNotification = { title?: string; body?: string; link?: string } | null;
 
+const SAFE_AREA_EDGES = Platform.OS === 'ios'
+  ? (['top', 'bottom', 'left', 'right'] as const)
+  : (['top', 'left', 'right'] as const);
+
 interface WebViewScreenProps {
   onInitialWebViewReady?: () => void;
 }
@@ -79,12 +83,8 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
       platform,
       health_provider: healthProvider,
     };
-    const send = (attempt: 'initial') => {
-      console.info('[WebViewBridge] Sending platform_info', { attempt, payload: platformInfo });
-      postMessageToWeb(platformInfo);
-    };
-
-    send('initial');
+    console.info('[WebViewBridge] Sending platform_info', { payload: platformInfo });
+    postMessageToWeb(platformInfo);
   }, [postMessageToWeb]);
 
   const handleHealthSyncRequest = useCallback(async (payload: HealthSyncRequestPayload) => {
@@ -180,6 +180,8 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
     return () => sub.remove();
   }, []);
 
+  const handleDismissBanner = useCallback(() => setForegroundNotification(null), []);
+
   const handleBannerPress = useCallback(() => {
     if (foregroundNotification?.link) {
       const fullUrl = foregroundNotification.link.startsWith('http')
@@ -190,7 +192,7 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
     setForegroundNotification(null);
   }, [foregroundNotification, setUrl]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (Platform.OS !== 'android') return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       if (canGoBack) {
@@ -203,21 +205,16 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
     return () => sub.remove();
   }, [canGoBack]);
 
-  const safeAreaEdges =
-    Platform.OS === 'ios'
-      ? (['top', 'bottom', 'left', 'right'] as const)
-      : (['top', 'left', 'right'] as const);
-
   return (
     <View style={styles.wrapper}>
-      <SafeAreaView style={styles.container} edges={safeAreaEdges}>
+      <SafeAreaView style={styles.container} edges={SAFE_AREA_EDGES}>
         {foregroundNotification ? (
           <NotificationBanner
             title={foregroundNotification.title}
             body={foregroundNotification.body}
             link={foregroundNotification.link}
             onPress={handleBannerPress}
-            onDismiss={() => setForegroundNotification(null)}
+            onDismiss={handleDismissBanner}
           />
         ) : null}
         <MyBalletWebView
