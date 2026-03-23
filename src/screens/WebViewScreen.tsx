@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
+import * as WebBrowser from 'expo-web-browser';
 import { MyBalletWebView } from '../components/MyBalletWebView';
 import { NotificationBanner } from '../components/NotificationBanner';
 import { WEBVIEW_ORIGIN } from '../constants/config';
@@ -120,10 +121,15 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
     }
   }, [postMessageToWeb]);
 
+  const handleOpenUrl = useCallback(async (url: string) => {
+    await WebBrowser.openBrowserAsync(url);
+  }, []);
+
   const onMessage = useWebViewMessage({
     onAuthToken: handleAuthToken,
     onSessionTerminated: clearRegisteredExpoPushToken,
     onHealthSyncRequest: handleHealthSyncRequest,
+    onOpenUrl: handleOpenUrl,
   });
   useExpoPushToken(accessToken);
 

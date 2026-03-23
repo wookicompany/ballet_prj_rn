@@ -7,12 +7,14 @@ interface UseWebViewMessageOptions {
   onAuthToken?: (accessToken: string) => void;
   onSessionTerminated?: (eventType: 'logout' | 'account_deleted') => void;
   onHealthSyncRequest?: (payload: HealthSyncRequestPayload) => void;
+  onOpenUrl?: (url: string) => void;
 }
 
 export function useWebViewMessage({
   onAuthToken,
   onSessionTerminated,
   onHealthSyncRequest,
+  onOpenUrl,
 }: UseWebViewMessageOptions = {}) {
   const handleMessage = useCallback((event: { nativeEvent: { data: string } }) => {
     const payload = parseWebMessage(event.nativeEvent.data);
@@ -35,8 +37,13 @@ export function useWebViewMessage({
 
     if (payload.type === 'health_sync_request') {
       onHealthSyncRequest?.(payload);
+      return;
     }
-  }, [onAuthToken, onSessionTerminated, onHealthSyncRequest]);
+
+    if (payload.type === 'open_url') {
+      onOpenUrl?.(payload.url);
+    }
+  }, [onAuthToken, onSessionTerminated, onHealthSyncRequest, onOpenUrl]);
 
   return handleMessage;
 }

@@ -52,6 +52,7 @@ export type WebToRNMessage =
   | { type: 'auth_token'; access_token: string }
   | { type: 'logout'; version: 1 }
   | { type: 'account_deleted'; version: 1 }
+  | { type: 'open_url'; url: string }
   | HealthSyncRequestPayload;
 
 export type RNToWebMessage = PlatformInfoPayload | HealthSyncResultSuccessPayload | HealthSyncResultErrorPayload;
@@ -95,6 +96,15 @@ export function parseWebMessage(data: string): WebToRNMessage | null {
         };
       }
       console.warn('[WebViewMessage] Ignored health_sync_request: invalid payload', parsed);
+      return null;
+    }
+
+    if (parsed.type === 'open_url') {
+      const url = 'url' in parsed ? parsed.url : undefined;
+      if (typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://'))) {
+        return { type: 'open_url', url };
+      }
+      console.warn('[WebViewMessage] Ignored open_url: invalid url', parsed);
       return null;
     }
 
