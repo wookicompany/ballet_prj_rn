@@ -186,7 +186,9 @@ export function MyBalletWebView({
         setSupportMultipleWindows={false}
         originWhitelist={ORIGIN_WHITELIST}
         bounces={false}
-        decelerationRate="normal"
+        {...(Platform.OS === 'ios' && {
+          decelerationRate: 'normal' as const,
+        })}
         {...(Platform.OS === 'android' && {
           mixedContentMode: 'always' as const,
         })}
