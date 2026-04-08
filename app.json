@@ -2,7 +2,7 @@
   "expo": {
     "name": "마이발레",
     "slug": "ballet-prj-rn",
-    "version": "1.3.4",
+    "version": "1.4.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "myballet",
@@ -43,6 +43,13 @@
       "usesCleartextTraffic": true
     },
     "plugins": [
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "wookicompany",
+          "project": "balletprj-rn"
+        }
+      ],
       "expo-notifications",
       [
         "@kingstinct/react-native-healthkit",
