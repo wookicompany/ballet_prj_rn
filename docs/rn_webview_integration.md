@@ -90,6 +90,7 @@ RN 앱에서 마이발레 웹을 WebView로 붙일 때 참고할 내용이다.
   - `projectId`는 RN `app.json`의 `extra.eas.projectId`와 일치해야 함
 - 알림 payload 규칙:
   - `data.link`는 절대 URL 고정 (예: `https://www.myballet.co.kr/performance/{pid}/reviews/{rid}`)
+  - RN은 방어적으로 상대 경로도 수신 시 `https://www.myballet.co.kr` prefix를 붙여 처리하나, 웹 발송은 절대 URL만 사용
   - 토큰 저장 정책은 단일 컬럼 유지(마지막 로그인 기기만 수신)
 - Expo 서버 인증:
   - 웹 발송 시 `EXPO_ACCESS_TOKEN` 기반 인증을 기본 정책으로 사용
@@ -103,7 +104,7 @@ RN 앱에서 마이발레 웹을 WebView로 붙일 때 참고할 내용이다.
 | 라이브러리 | `react-native-webview` |
 | URL / 진입 | 프로덕션 `https://www.myballet.co.kr/` · **상황별 (확정)** 기본 `/calendar`, 푸시·딥링크 시 payload URL로 로드 |
 | 로그인 | **WebView 내 OAuth (확정)** · 콜백 `https://www.myballet.co.kr/auth/callback` |
-| postMessage | **함 (확정)** · 햅틱 + 해제 이벤트(`logout`, `account_deleted`, `version:1`) |
+| postMessage | **함 (확정)** · `haptic`, `auth_token`, `logout`, `account_deleted`, `health_sync_request`, `open_url` 6종 |
 | 세션 | WebView 스토리지에 자동 저장, RN에서 별도 토큰 전달 불필요 |
 | iOS | `http` 사용 시 ATS 예외, OAuth 도메인 허용 |
 | Android | `http` 사용 시 cleartext/네트워크 보안 설정 |

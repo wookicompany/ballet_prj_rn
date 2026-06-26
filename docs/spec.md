@@ -52,8 +52,10 @@
 
 **결정: `myballet://`**
 
-- 예: `myballet://open?url=https://www.myballet.co.kr/performance/123/reviews/456`
-- 또는 경로 기반: `myballet://performance/123` (구현 시 스킴·경로 규칙 확정 후 `src/navigation/linking.ts`에 반영).
+- 지원 패턴 (`src/navigation/linking.ts` 구현 완료):
+  - `myballet://open?url=<encoded_full_url>` — 절대/상대 URL 디코딩 후 WebView 로드
+  - `myballet://<path>` — `https://www.myballet.co.kr` + path로 변환 후 WebView 로드
+- 예: `myballet://open?url=https%3A%2F%2Fwww.myballet.co.kr%2Fperformance%2F123%2Freviews%2F456`
 
 ---
 
@@ -82,7 +84,7 @@
 
 ## 다음 단계
 
-- Google 외부 브라우저 로그인 후 앱 복귀를 위해 OAuth redirect URL에 앱 스킴(`myballet://...`) 연동을 확정한다.
+- Google 외부 브라우저 로그인 후 앱 복귀: RN 딥링크 파싱(`src/navigation/linking.ts`)은 구현 완료. Google OAuth 콘솔에서 `myballet://` redirect URI 등록 및 웹 auth callback 연동 여부 확인 필요.
 - 주소검색 세부 UX/필드 확장은 웹 저장소에서 관리한다.
 
 ---
@@ -98,7 +100,8 @@
 ### 5.2 브릿지 계약 (고정)
 
 - 앱 로드 완료 시 1회 전송:
-  - `{ "type": "platform_info", "version": 1, "platform": "ios", "health_provider": "healthkit" }`
+  - iOS: `{ "type": "platform_info", "version": 1, "platform": "ios", "health_provider": "healthkit" }`
+  - Android: `{ "type": "platform_info", "version": 1, "platform": "android", "health_provider": "none" }`
 - 웹 요청:
   - `{ "type": "health_sync_request", "version": 1, "request_id": "<id>", "date": "YYYY-MM-DD", "activity": "barre" }`
 - 앱 응답:

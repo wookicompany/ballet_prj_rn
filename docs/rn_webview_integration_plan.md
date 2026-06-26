@@ -119,7 +119,7 @@
 
 ### 2.8 푸시 payload 규격 (RN 고정 계약)
 
-- **공통:** `data.link`는 절대 URL 고정. RN은 알림 탭 시 이 URL로 WebView 로드.
+- **공통:** `data.link`는 절대 URL 고정. RN은 알림 탭 시 이 URL로 WebView 로드. RN은 방어적으로 상대 경로도 `https://www.myballet.co.kr` prefix를 붙여 처리하나, 웹 발송은 절대 URL만 사용.
 - **타입별 link 예:**
   - 댓글 알림: `https://www.myballet.co.kr/performance/[performanceId]/reviews/[reviewId]`
   - 리뷰 좋아요: 동일
