@@ -59,11 +59,21 @@ export const WEBVIEW_FORCE_EXTERNAL_HOST_SUFFIXES = ['.google.com'] as const;
  * The bridge is injected into every page loaded in the WebView (including OAuth
  * provider pages), so only messages coming from the myballet web app are honored.
  *
- * Fail-open: if the origin URL is missing or unparseable, return true to preserve
- * existing behavior — only clearly-foreign origins are rejected. Both the apex
- * (`myballet.co.kr`) and `www` host, plus any subdomain, are trusted.
+ * Enforced in production only. In dev/preview builds (`__DEV__`) the gate is off
+ * and every message passes, so pointing BASE_URL at a `*.vercel.app` preview or
+ * localhost never silently drops bridge messages during QA. Production ships with
+ * BASE_URL fixed to www.myballet.co.kr, where this gate blocks nothing legitimate
+ * while still rejecting messages from foreign pages loaded in the WebView.
+ *
+ * Fail-open: if the origin URL is missing or unparseable, return true — only
+ * clearly-foreign origins are rejected. Both the apex (`myballet.co.kr`) and `www`
+ * host, plus any `*.myballet.co.kr` subdomain, are trusted.
+ *
+ * NOTE: this trusts myballet hosts only. If BASE_URL / WEBVIEW_ALLOWED_HOSTS are
+ * ever pointed at another production domain, update this allowlist in lockstep.
  */
 export function isTrustedMessageOrigin(url?: string): boolean {
+  if (__DEV__) return true;
   if (!url) return true;
   try {
     const host = new URL(url).hostname.trim().toLowerCase().replace(/\.$/, '');
