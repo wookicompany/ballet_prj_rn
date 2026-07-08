@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import * as Haptics from 'expo-haptics';
+import { isTrustedMessageOrigin } from '../constants/config';
 import { parseWebMessage } from '../types/messaging';
 import type { HealthSyncRequestPayload } from '../types/messaging';
 
@@ -16,7 +17,12 @@ export function useWebViewMessage({
   onHealthSyncRequest,
   onOpenUrl,
 }: UseWebViewMessageOptions = {}) {
-  const handleMessage = useCallback((event: { nativeEvent: { data: string } }) => {
+  const handleMessage = useCallback((event: { nativeEvent: { data: string; url?: string } }) => {
+    if (!isTrustedMessageOrigin(event.nativeEvent.url)) {
+      console.warn('[WebViewMessage] Ignored message: untrusted origin', event.nativeEvent.url);
+      return;
+    }
+
     const payload = parseWebMessage(event.nativeEvent.data);
     if (!payload) return;
 

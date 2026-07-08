@@ -37,6 +37,17 @@ export function getWebViewUrlFromDeepLink(linkUrl: string): string | null {
   }
 }
 
+/**
+ * Resolve a notification/push `data.link` into a full WebView URL.
+ * Absolute URLs are used as-is; relative paths are prefixed with the web origin.
+ * (Web sends absolute URLs; this is the defensive fallback for relative paths.)
+ */
+export function resolveNotificationLink(link: string): string {
+  return link.startsWith('http')
+    ? link
+    : `${WEBVIEW_ORIGIN}${link.startsWith('/') ? link : '/' + link}`;
+}
+
 export const linkingConfig = {
   prefixes: [`${DEEP_LINK_SCHEME}://`],
   getPathFromState(state: { routes?: { name: string; params?: Record<string, unknown> }[] }) {

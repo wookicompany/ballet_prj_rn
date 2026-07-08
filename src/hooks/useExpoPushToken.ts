@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { registerExpoPushToken } from '../services/expoPush';
@@ -12,7 +12,7 @@ function getProjectId(): string | null {
  * Request notification permissions, get Expo push token,
  * and register it with the web API when accessToken is available.
  */
-export function useExpoPushToken(accessToken: string | null): void {
+export function useExpoPushToken(accessToken: string | null): { resetRegistrationCache: () => void } {
   const accessTokenRef = useRef<string | null>(accessToken);
   const latestExpoPushToken = useRef<string | null>(null);
   const lastRegisteredToken = useRef<string | null>(null);
@@ -21,6 +21,17 @@ export function useExpoPushToken(accessToken: string | null): void {
 
   const shouldSkipRegister = (token: string, tokenOwner: string) =>
     token === lastRegisteredToken.current && tokenOwner === lastRegisteredAccessToken.current;
+
+  /**
+   * Clear the register dedup cache so the next (token, accessToken) pair is
+   * re-registered. Call this after a server-side token clear (logout/account
+   * deletion) that happens outside this hook, otherwise a re-login with the
+   * same access token would be skipped as "already registered".
+   */
+  const resetRegistrationCache = useCallback(() => {
+    lastRegisteredToken.current = null;
+    lastRegisteredAccessToken.current = null;
+  }, []);
 
   useEffect(() => {
     accessTokenRef.current = accessToken;
@@ -100,4 +111,6 @@ export function useExpoPushToken(accessToken: string | null): void {
       tokenSub.remove();
     };
   }, [projectId]);
+
+  return { resetRegistrationCache };
 }

@@ -9,11 +9,12 @@ import { WebViewScreen } from './src/screens/WebViewScreen';
 
 Sentry.init({
   dsn: 'https://ab408aad9df809c1fc7488c6252a4462@o4510941708288000.ingest.us.sentry.io/4511181856047104',
-  tracesSampleRate: 1.0,
+  tracesSampleRate: 0.2,
 });
 
 const Stack = createNativeStackNavigator();
 const MIN_SPLASH_MS = 2000;
+const MAX_SPLASH_MS = 8000;
 
 void SplashScreen.preventAutoHideAsync().catch(() => {
   // no-op: splash may already be handled by native side
@@ -37,6 +38,19 @@ function App() {
       // no-op: splash might already be hidden
     });
   }, [isInitialWebViewReady, isMinDurationElapsed]);
+
+  // Fallback: force-hide the splash if the WebView never signals readiness
+  // (e.g. an initial load that hangs without firing onLoadEnd). hideAsync is
+  // idempotent, so this is a no-op when the normal path already hid it.
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      void SplashScreen.hideAsync().catch(() => {
+        // no-op: splash might already be hidden
+      });
+    }, MAX_SPLASH_MS);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <SafeAreaProvider>

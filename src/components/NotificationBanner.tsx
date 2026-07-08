@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { X } from 'lucide-react-native';
 
 export interface NotificationBannerProps {
   title?: string;
@@ -16,6 +17,17 @@ export function NotificationBanner({ title, body, onPress, onDismiss }: Notifica
         {title ? <Text style={styles.title} numberOfLines={1}>{title}</Text> : null}
         {body ? <Text style={styles.body} numberOfLines={2}>{body}</Text> : null}
       </View>
+      {onDismiss ? (
+        <Pressable
+          style={styles.closeButton}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="알림 닫기"
+          onPress={onDismiss}
+        >
+          <X size={18} color="#999" />
+        </Pressable>
+      ) : null}
     </Pressable>
   );
 }
@@ -26,6 +38,8 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#fff',
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -38,7 +52,12 @@ const styles = StyleSheet.create({
     elevation: 4,
     zIndex: 1000,
   },
-  content: {},
+  content: {
+    flex: 1,
+  },
+  closeButton: {
+    paddingLeft: 12,
+  },
   title: {
     fontSize: 14,
     fontWeight: '600',

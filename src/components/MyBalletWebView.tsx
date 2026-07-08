@@ -74,7 +74,7 @@ const INJECTED_BRIDGE_GUARD_JS = `
 
 interface MyBalletWebViewProps {
   url: string;
-  onMessage?: (event: { nativeEvent: { data: string } }) => void;
+  onMessage?: (event: { nativeEvent: { data: string; url?: string } }) => void;
   onShouldStartLoadWithRequest?: (request: { url: string }) => boolean;
   onNavigationStateChange?: (nav: { canGoBack?: boolean }) => void;
   onLoadEnd?: () => void;

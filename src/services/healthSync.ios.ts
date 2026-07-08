@@ -140,13 +140,16 @@ export async function requestHealthSync(
       throw new HealthSyncError('NO_DATA', 'No barre workout found for this date.');
     }
 
-    const activeEnergyKcal = await queryWorkoutActiveEnergyKcal(workout);
-    const basalEnergyKcal = await queryWorkoutBasalEnergyKcal(workout);
+    const [activeEnergyKcal, basalEnergyKcal, heartRate] = await Promise.all([
+      queryWorkoutActiveEnergyKcal(workout),
+      queryWorkoutBasalEnergyKcal(workout),
+      queryWorkoutHeartRate(workout),
+    ]);
     const totalEnergyKcal =
       activeEnergyKcal != null || basalEnergyKcal != null
         ? toRounded((activeEnergyKcal ?? 0) + (basalEnergyKcal ?? 0))
         : queryWorkoutFallbackTotalEnergyKcal(workout);
-    const { avgBpm, maxBpm } = await queryWorkoutHeartRate(workout);
+    const { avgBpm, maxBpm } = heartRate;
     const sourceName = workout.sourceRevision?.source?.name ?? null;
     const deviceName = workout.device?.name ?? workout.metadataDeviceName ?? null;
 

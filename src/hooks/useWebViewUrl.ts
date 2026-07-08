@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import * as Linking from 'expo-linking';
-import { getInitialWebViewUrl } from '../constants/env';
+import { DEFAULT_WEBVIEW_URL } from '../constants/config';
 import { getWebViewUrlFromDeepLink } from '../navigation/linking';
 
 export function useWebViewUrl() {
-  const [url, setUrl] = useState(() => getInitialWebViewUrl());
+  const [url, setUrl] = useState(() => DEFAULT_WEBVIEW_URL);
 
   useEffect(() => {
     const handleUrl = (event: { url: string }) => {

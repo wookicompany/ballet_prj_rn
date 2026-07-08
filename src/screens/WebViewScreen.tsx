@@ -5,11 +5,11 @@ import * as Notifications from 'expo-notifications';
 import * as WebBrowser from 'expo-web-browser';
 import { MyBalletWebView } from '../components/MyBalletWebView';
 import { NotificationBanner } from '../components/NotificationBanner';
-import { WEBVIEW_ORIGIN } from '../constants/config';
 import { useExpoPushToken } from '../hooks/useExpoPushToken';
 import { useWebViewMessage } from '../hooks/useWebViewMessage';
 import { registerExpoPushToken } from '../services/expoPush';
 import { useWebViewUrl } from '../hooks/useWebViewUrl';
+import { resolveNotificationLink } from '../navigation/linking';
 import type { WebView } from 'react-native-webview';
 import { requestHealthSync } from '../services/healthSync';
 import type { HealthSyncRequestPayload, PlatformInfoPayload } from '../types/messaging';
@@ -50,6 +50,8 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
     }
   }, [accessToken]);
 
+  const { resetRegistrationCache } = useExpoPushToken(accessToken);
+
   const handleAuthToken = useCallback((token: string) => {
     setAccessToken((prev) => (prev === token ? prev : token));
   }, []);
@@ -59,6 +61,7 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
     if (!tokenForClear) {
       console.warn('[ExpoPush] Skip token clear: no access token', { eventType });
       setAccessToken(null);
+      resetRegistrationCache();
       return;
     }
 
@@ -68,8 +71,9 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
       console.warn('[ExpoPush] Token clear failed', { eventType, error });
     } finally {
       setAccessToken(null);
+      resetRegistrationCache();
     }
-  }, [accessToken]);
+  }, [accessToken, resetRegistrationCache]);
 
   const postMessageToWeb = useCallback((payload: object) => {
     webViewRef.current?.postMessage?.(JSON.stringify(payload));
@@ -131,7 +135,6 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
     onHealthSyncRequest: handleHealthSyncRequest,
     onOpenUrl: handleOpenUrl,
   });
-  useExpoPushToken(accessToken);
 
   const onNavigationStateChange = useCallback((nav: { canGoBack?: boolean }) => {
     setCanGoBack(nav.canGoBack ?? false);
@@ -150,8 +153,7 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const link = response.notification.request.content.data?.link as string | undefined;
       if (link) {
-        const fullUrl = link.startsWith('http') ? link : `${WEBVIEW_ORIGIN}${link.startsWith('/') ? link : '/' + link}`;
-        setUrl(fullUrl);
+        setUrl(resolveNotificationLink(link));
       }
     });
     return () => sub.remove();
@@ -162,8 +164,7 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
       if (!response) return;
       const link = response.notification.request.content.data?.link as string | undefined;
       if (link) {
-        const fullUrl = link.startsWith('http') ? link : `${WEBVIEW_ORIGIN}${link.startsWith('/') ? link : '/' + link}`;
-        setUrl(fullUrl);
+        setUrl(resolveNotificationLink(link));
       }
     });
   }, [setUrl]);
@@ -184,10 +185,7 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
 
   const handleBannerPress = useCallback(() => {
     if (foregroundNotification?.link) {
-      const fullUrl = foregroundNotification.link.startsWith('http')
-        ? foregroundNotification.link
-        : `${WEBVIEW_ORIGIN}${foregroundNotification.link.startsWith('/') ? foregroundNotification.link : '/' + foregroundNotification.link}`;
-      setUrl(fullUrl);
+      setUrl(resolveNotificationLink(foregroundNotification.link));
     }
     setForegroundNotification(null);
   }, [foregroundNotification, setUrl]);

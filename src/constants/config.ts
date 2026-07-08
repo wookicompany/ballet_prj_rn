@@ -53,3 +53,22 @@ export const WEBVIEW_ALLOWED_HOST_SUFFIXES = ['.kakao.com', '.supabase.co', '.ap
  */
 export const WEBVIEW_FORCE_EXTERNAL_HOSTS = ['accounts.google.com'] as const;
 export const WEBVIEW_FORCE_EXTERNAL_HOST_SUFFIXES = ['.google.com'] as const;
+
+/**
+ * Whether a postMessage originating from `url` should be trusted by the RN bridge.
+ * The bridge is injected into every page loaded in the WebView (including OAuth
+ * provider pages), so only messages coming from the myballet web app are honored.
+ *
+ * Fail-open: if the origin URL is missing or unparseable, return true to preserve
+ * existing behavior — only clearly-foreign origins are rejected. Both the apex
+ * (`myballet.co.kr`) and `www` host, plus any subdomain, are trusted.
+ */
+export function isTrustedMessageOrigin(url?: string): boolean {
+  if (!url) return true;
+  try {
+    const host = new URL(url).hostname.trim().toLowerCase().replace(/\.$/, '');
+    return host === 'myballet.co.kr' || host.endsWith('.myballet.co.kr');
+  } catch {
+    return true;
+  }
+}
