@@ -59,7 +59,11 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 220,
           "backgroundColor": "#ffffff",
-          "resizeMode": "contain"
+          "resizeMode": "contain",
+          "ios": {
+            "image": "./assets/splash-icon-ios.png",
+            "imageWidth": 240
+          }
         }
       ],
       [
