@@ -24,6 +24,11 @@ android/
 # Metro
 .metro-health-check*
 
+# Secrets — never commit (Google Play service account key, etc.)
+google-service-account.json
+*service-account*.json
+*-service-account-*.json
+
 # Debug / env
 npm-debug.*
 yarn-debug.*
