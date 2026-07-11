@@ -7,6 +7,11 @@
     "icon": "./assets/icon.png",
     "scheme": "myballet",
     "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-icon-ios.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.wookicompany.myballet",
