@@ -3,8 +3,10 @@ import { BackHandler, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import * as WebBrowser from 'expo-web-browser';
+import NetInfo from '@react-native-community/netinfo';
 import { MyBalletWebView } from '../components/MyBalletWebView';
 import { NotificationBanner } from '../components/NotificationBanner';
+import { OfflineScreen } from '../components/OfflineScreen';
 import { useExpoPushToken } from '../hooks/useExpoPushToken';
 import { useWebViewMessage } from '../hooks/useWebViewMessage';
 import { registerExpoPushToken } from '../services/expoPush';
@@ -39,10 +41,16 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [canGoBack, setCanGoBack] = useState(false);
   const [foregroundNotification, setForegroundNotification] = useState<ForegroundNotification>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const webViewRef = useRef<WebView>(null);
   const lastAccessTokenRef = useRef<string | null>(null);
   const isInitialWebViewReadyNotifiedRef = useRef(false);
   const healthSyncInFlightRef = useRef(false);
+  const loadFailedRef = useRef(false);
+
+  useEffect(() => {
+    loadFailedRef.current = loadFailed;
+  }, [loadFailed]);
 
   useEffect(() => {
     if (accessToken) {
@@ -149,6 +157,31 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
     onInitialWebViewReady?.();
   }, [onInitialWebViewReady, postPlatformInfo]);
 
+  const handleLoadError = useCallback(() => {
+    setLoadFailed(true);
+  }, []);
+
+  const handleLoadSuccess = useCallback(() => {
+    setLoadFailed(false);
+  }, []);
+
+  // reload만 트리거하고 loadFailed는 유지한다. 로드 성공 시 onLoad(handleLoadSuccess)
+  // 가 해제하므로, 재시도/자동복구 중에도 오프라인 화면(+"연결 중" 표시)이 유지되고
+  // 성공한 순간에만 웹 화면으로 넘어가 깜빡임이 없다.
+  const handleRetry = useCallback(() => {
+    webViewRef.current?.reload();
+  }, []);
+
+  // 네트워크 복구를 감지하면, 로드 실패 상태였을 때 자동으로 reload 한다.
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      if (state.isConnected && loadFailedRef.current) {
+        webViewRef.current?.reload();
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const link = response.notification.request.content.data?.link as string | undefined;
@@ -222,7 +255,10 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
           onMessage={onMessage}
           onNavigationStateChange={onNavigationStateChange}
           onLoadEnd={handleWebViewLoadEnd}
+          onLoadError={handleLoadError}
+          onLoadSuccess={handleLoadSuccess}
         />
+        {loadFailed ? <OfflineScreen onRetry={handleRetry} /> : null}
       </SafeAreaView>
     </View>
   );

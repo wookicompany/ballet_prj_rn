@@ -78,6 +78,8 @@ interface MyBalletWebViewProps {
   onShouldStartLoadWithRequest?: (request: { url: string }) => boolean;
   onNavigationStateChange?: (nav: { canGoBack?: boolean }) => void;
   onLoadEnd?: () => void;
+  onLoadError?: () => void;
+  onLoadSuccess?: () => void;
   webViewRef?: React.RefObject<WebView | null>;
 }
 
@@ -136,6 +138,8 @@ export function MyBalletWebView({
   onShouldStartLoadWithRequest,
   onNavigationStateChange,
   onLoadEnd,
+  onLoadError,
+  onLoadSuccess,
   webViewRef,
 }: MyBalletWebViewProps) {
   const handleShouldStartLoadWithRequest = useCallback((request: { url: string }) => {
@@ -173,8 +177,16 @@ export function MyBalletWebView({
         onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
         onNavigationStateChange={onNavigationStateChange}
         onLoadEnd={onLoadEnd}
+        onLoad={() => {
+          onLoadSuccess?.();
+        }}
         onError={(event) => {
           console.warn('[WebView] load error', event.nativeEvent);
+          // 취소(iOS -999)·정책 차단(iOS 102, 외부링크 차단 등)은 실제 네트워크
+          // 로드 실패가 아니므로 오프라인 처리에서 제외한다(오탐 방지).
+          const code = event.nativeEvent?.code;
+          if (code === -999 || code === 102) return;
+          onLoadError?.();
         }}
         onHttpError={(event) => {
           console.warn('[WebView] http error', event.nativeEvent);
