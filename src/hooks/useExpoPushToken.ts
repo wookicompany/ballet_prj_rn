@@ -16,6 +16,7 @@ function getProjectId(): string | null {
 export function useExpoPushToken(accessToken: string | null): { resetRegistrationCache: () => void } {
   const accessTokenRef = useRef<string | null>(accessToken);
   const latestExpoPushToken = useRef<string | null>(null);
+  const isRunningRef = useRef(false);
   const lastRegisteredToken = useRef<string | null>(null);
   const lastRegisteredAccessToken = useRef<string | null>(null);
   const projectId = useMemo(() => getProjectId(), []);
@@ -108,10 +109,16 @@ export function useExpoPushToken(accessToken: string | null): { resetRegistratio
     // 한 번 확보되면(latestExpoPushToken) 더는 반복하지 않는다. (등록 중복은 dedup가 방지)
     const maybeRun = () => {
       if (AppState.currentState !== 'active') return;
-      if (latestExpoPushToken.current) return;
-      run().catch((error) => {
-        console.warn('[ExpoPush] Token setup failed', error);
-      });
+      // 이미 토큰을 확보했거나 run()이 진행 중이면 중복 진입하지 않는다.
+      if (latestExpoPushToken.current || isRunningRef.current) return;
+      isRunningRef.current = true;
+      run()
+        .catch((error) => {
+          console.warn('[ExpoPush] Token setup failed', error);
+        })
+        .finally(() => {
+          isRunningRef.current = false;
+        });
     };
 
     maybeRun();
