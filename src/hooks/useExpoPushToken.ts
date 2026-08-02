@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { registerExpoPushToken } from '../services/expoPush';
@@ -102,13 +103,26 @@ export function useExpoPushToken(accessToken: string | null): { resetRegistratio
         });
     });
 
-    run().catch((error) => {
-      console.warn('[ExpoPush] Token setup failed', error);
+    // 잠긴 백그라운드 실행 시 키체인 접근(errSecInteractionNotAllowed)을 피하려면
+    // 앱이 active일 때만 토큰을 확보한다. 아직 토큰이 없으면 active 전환 시 재시도하고,
+    // 한 번 확보되면(latestExpoPushToken) 더는 반복하지 않는다. (등록 중복은 dedup가 방지)
+    const maybeRun = () => {
+      if (AppState.currentState !== 'active') return;
+      if (latestExpoPushToken.current) return;
+      run().catch((error) => {
+        console.warn('[ExpoPush] Token setup failed', error);
+      });
+    };
+
+    maybeRun();
+    const appStateSub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') maybeRun();
     });
 
     return () => {
       mounted = false;
       tokenSub.remove();
+      appStateSub.remove();
     };
   }, [projectId]);
 

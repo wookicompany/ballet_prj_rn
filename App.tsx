@@ -10,6 +10,17 @@ import { WebViewScreen } from './src/screens/WebViewScreen';
 Sentry.init({
   dsn: 'https://ab408aad9df809c1fc7488c6252a4462@o4510941708288000.ingest.us.sentry.io/4511181856047104',
   tracesSampleRate: 0.2,
+  beforeSend(event, hint) {
+    // 잠금 상태에서 푸시 등록 시 iOS 키체인 접근 실패(errSecInteractionNotAllowed, -25308).
+    // 비치명적이며 다음 활성 실행에서 자가복구되므로 리포트에서 제외한다.
+    const err = hint?.originalException as { code?: unknown; message?: unknown } | undefined;
+    const code = err?.code != null ? String(err.code) : '';
+    const message = typeof err?.message === 'string' ? err.message : '';
+    if (code === '-25308' || message.includes('Keychain access failed')) {
+      return null;
+    }
+    return event;
+  },
 });
 
 const Stack = createNativeStackNavigator();
