@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
+import NetInfo from '@react-native-community/netinfo';
 import {
   WEBVIEW_ALLOWED_HOST_SUFFIXES,
   WEBVIEW_ALLOWED_HOSTS,
@@ -9,6 +10,12 @@ import {
   WEBVIEW_ORIGIN,
 } from '../constants/config';
 import { openExternalUrl } from '../services/linking';
+
+// Android WebViewClient ERROR_* 중 '실제 네트워크 연결 실패'로 확정할 수 있는 코드.
+// -2 HOST_LOOKUP(DNS 실패), -6 CONNECT(연결 실패), -7 IO(서버 read/write 실패),
+// -8 TIMEOUT(타임아웃). 이 코드들은 리다이렉트/네비게이션 취소(ERR_ABORTED, -1)로는
+// 발생하지 않으므로 오탐 없이 오프라인 처리 신호로 신뢰할 수 있다.
+const ANDROID_NETWORK_ERROR_CODES = new Set<number>([-2, -6, -7, -8]);
 
 const INJECTED_BRIDGE_GUARD_JS = `
   (function() {
@@ -182,11 +189,34 @@ export function MyBalletWebView({
         }}
         onError={(event) => {
           console.warn('[WebView] load error', event.nativeEvent);
-          // 취소(iOS -999)·정책 차단(iOS 102, 외부링크 차단 등)은 실제 네트워크
-          // 로드 실패가 아니므로 오프라인 처리에서 제외한다(오탐 방지).
           const code = event.nativeEvent?.code;
-          if (code === -999 || code === 102) return;
-          onLoadError?.();
+
+          // iOS: 기존 동작을 그대로 보존한다(빌드 59 동작 유지).
+          // 취소(-999)·정책/프레임 로드 중단(102)은 실제 네트워크 실패가 아니므로 제외.
+          if (Platform.OS === 'ios') {
+            if (code === -999 || code === 102) return;
+            onLoadError?.();
+            return;
+          }
+
+          // Android: 라이브러리(react-native-webview)가 구형 onReceivedError만
+          // 오버라이드해 onError는 '메인 프레임 메인 리소스 실패'에서만 호출되지만,
+          // 리다이렉트/네비게이션 취소(ERR_ABORTED 등, code -1)로도 올라와 오탐이 난다.
+          // 그래서 (1) 명백한 네트워크 오류 코드이거나 (2) 실제 연결이 offline일 때만
+          // 오프라인 화면을 띄운다. 불확실하면 정상 화면을 유지(fail-open)해 오탐을 막는다.
+          if (typeof code === 'number' && ANDROID_NETWORK_ERROR_CODES.has(code)) {
+            onLoadError?.();
+            return;
+          }
+          NetInfo.fetch()
+            .then((state) => {
+              if (state.isConnected === false || state.isInternetReachable === false) {
+                onLoadError?.();
+              }
+            })
+            .catch(() => {
+              // 연결 상태 확인 실패 시 불확실 → 오프라인 화면을 띄우지 않는다(오탐 방지).
+            });
         }}
         onHttpError={(event) => {
           console.warn('[WebView] http error', event.nativeEvent);
