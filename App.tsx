@@ -13,10 +13,14 @@ Sentry.init({
   beforeSend(event, hint) {
     // 잠금 상태에서 푸시 등록 시 iOS 키체인 접근 실패(errSecInteractionNotAllowed, -25308).
     // 비치명적이며 다음 활성 실행에서 자가복구되므로 리포트에서 제외한다.
+    // JS rejection(hint.originalException)과 네이티브 발원 이벤트(event.exception.values) 양쪽을 검사.
     const err = hint?.originalException as { code?: unknown; message?: unknown } | undefined;
     const code = err?.code != null ? String(err.code) : '';
     const message = typeof err?.message === 'string' ? err.message : '';
-    if (code === '-25308' || message.includes('Keychain access failed')) {
+    const inValues = event.exception?.values?.some(
+      (v) => typeof v?.value === 'string' && v.value.includes('Keychain access failed'),
+    ) ?? false;
+    if (code === '-25308' || message.includes('Keychain access failed') || inValues) {
       return null;
     }
     return event;
