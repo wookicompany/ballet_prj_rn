@@ -74,6 +74,18 @@ RN 앱에서 마이발레 웹을 WebView로 붙일 때 참고할 내용이다.
   - 처리 시 공통으로 `POST /api/profile/expo-push-token` with `{ "expo_push_token": "" }` 호출
   - 스펙 외 타입/버전은 무시하고 경고 로그만 남김
 
+### 4.2 health_sync_request 발신 시점(트리거 컨텍스트) — 확장 (2026-08-02)
+
+- **메시지 계약은 불변.** 타입·페이로드·버전(`health_sync_request` / `health_sync_result`, `version: 1`)은 그대로다. 바뀌는 것은 **웹이 이 메시지를 언제 보내는가**뿐이다.
+- **발신 시점(웹 기준):**
+  - 기존: **기록 작성 화면**에서만 발신.
+  - 확장 후: 기록 작성 화면 **+ "예정(planned) → 완료 전환"** 시점(수업이 끝난 뒤 기분을 남길 때)에서도 발신. ("예정 기록 + 반복 등록" 기능 도입에 따름.)
+- **RN 영향: 없음(검증 완료).** `handleHealthSyncRequest`는 호출 위치와 무관하게 `request_id`를 실어 `health_sync_result`를 되돌려주므로 코드 변경 불필요.
+- **웹 조율 포인트(요약):**
+  - 동시 요청이 겹치면 RN in-flight 가드가 `{ status: "error", code: "QUERY_FAILED", message: "Another health sync is already in progress." }` 반환 → 웹이 재시도/무시 처리.
+  - iOS 전용이라 그 외 플랫폼은 `code: "NO_PERMISSION"` 반환 → 예정→완료 플로우도 이 케이스 처리.
+- 전체 계약·데이터/에러 정책·조율 상세는 [spec.md 5.4](spec.md) 참조. (HealthKit 계약 정본은 spec.md 섹션 5.)
+
 **알림 배너(댓글/좋아요) 구현 (확정):** postMessage 아님. **마이발레 Vercel API** 에서 댓글/좋아요 생성 시 수신자 `expo_push_token`을 Supabase에서 조회한 뒤 **Expo Push API 호출**. Supabase는 DB·토큰 저장만 사용. RN은 Expo 토큰을 등록하고 푸시 수신 시 배너 표시·탭 시 해당 URL로 WebView 이동.
 
 - RN 토큰 등록 API: `POST /api/profile/expo-push-token`

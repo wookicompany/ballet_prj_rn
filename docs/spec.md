@@ -82,13 +82,6 @@
 
 ---
 
-## 다음 단계
-
-- Google 외부 브라우저 로그인 후 앱 복귀: RN 딥링크 파싱(`src/navigation/linking.ts`)은 구현 완료. Google OAuth 콘솔에서 `myballet://` redirect URI 등록 및 웹 auth callback 연동 여부 확인 필요.
-- 주소검색 세부 UX/필드 확장은 웹 저장소에서 관리한다.
-
----
-
 ## 5. Apple Watch 연동 (iOS 전용)
 
 ### 5.1 범위/환경
@@ -119,3 +112,42 @@
 - 에러코드:
   - `NO_PERMISSION`, `NO_DATA`, `TIMEOUT`, `QUERY_FAILED`
   - 데이터 없음은 반드시 `{ "status": "error", "code": "NO_DATA" }`
+
+### 5.4 호출 시점(트리거 컨텍스트) 확장 (2026-08-02)
+
+**배경:** 웹에 "예정(planned) 기록 + 반복 등록" 기능이 추가되는 중이다. 이에 따라 `health_sync_request`가 **나가는 화면(트리거 컨텍스트)**이 늘어난다.
+
+**변경 요약**
+
+- **브릿지 계약(메시지 타입·페이로드·버전)은 그대로다.** 메시지 스키마 변경 없음(여전히 `health_sync_request` / `health_sync_result`, `version: 1`).
+- 바뀌는 것은 **웹이 이 메시지를 언제 보내는가** 뿐이다.
+  - 기존: **기록 작성 화면**에서만 발신.
+  - 확장 후: 기록 작성 화면 **+ "예정 → 완료 전환"** 시점(수업이 끝난 뒤 기분을 남길 때)에서도 발신.
+
+**RN 영향: 없음 (검증 완료)**
+
+- 핸들러 `handleHealthSyncRequest`는 **호출 위치와 무관**하게 `health_sync_request`를 받아, 실린 `request_id`를 그대로 `health_sync_result`에 담아 반환한다. 트리거가 어느 화면이든 동작이 동일하므로 **RN 코드 변경 불필요**.
+- `request_id`는 웹이 발급/매칭을 담당한다(요청↔응답 상관관계는 웹 책임). 트리거가 여러 곳으로 늘어도 RN은 받은 `request_id`를 되돌려줄 뿐이다.
+
+**웹이 처리해야 할 조율 포인트**
+
+- **동시 요청(in-flight 가드):** RN은 한 번에 하나의 헬스 조회만 처리한다. 이미 진행 중일 때 새 `health_sync_request`가 오면 다음을 반환한다.
+  - `{ "type": "health_sync_result", "version": 1, "request_id": "<id>", "status": "error", "code": "QUERY_FAILED", "message": "Another health sync is already in progress." }`
+  - 호출 시점 확장으로 요청이 겹칠 확률이 올라가므로, 웹은 이 응답을 받았을 때 **재시도 또는 무시** 정책을 정해 처리한다(예: 짧은 지연 후 1회 재시도, 또는 사용자에게 조용히 무시).
+- **iOS 전용:** 헬스 연동은 iOS 전용이다. Android 등 미지원 플랫폼에서는 `{ "status": "error", "code": "NO_PERMISSION" }`가 반환된다. **예정 → 완료 전환 플로우도 이 케이스를 동일하게 처리**해야 한다(헬스 데이터 없이 완료 진행 가능하도록).
+  - 플랫폼 판별은 앱 로드 시 1회 오는 `platform_info`(`health_provider`)로 선제 분기하는 것을 권장한다. iOS라도 권한 거부/데이터 없음(`NO_PERMISSION`/`NO_DATA`)은 별도 정상 분기로 다룬다.
+
+### 5.5 로드맵 — "안 채운 예정 리마인더 푸시" (현재 스코프 아님)
+
+- "예정으로 등록했지만 아직 완료(기분 기록)로 전환하지 않은 항목"에 대해 **리마인더 푸시**를 붙이는 아이디어가 있다. **지금 스코프는 아니다.**
+- 착수 시 필요한 것(선행):
+  - RN 푸시/알림 처리 확장 — **새 알림 payload·딥링크 계약**을 먼저 정의해야 한다(현재 알림 계약은 댓글/좋아요 기준).
+  - 리마인더 탭 시 이동할 대상 URL(예: 해당 예정 기록의 완료 전환 화면) 딥링크 규칙 확정.
+- 착수 순서 원칙: **브릿지/알림 계약부터 정의**한 뒤 웹·RN 양측을 맞춘다. 이 시점 전까지는 새 라우트·새 브릿지 메시지·새 알림 타입을 만들지 않는다.
+
+---
+
+## 다음 단계
+
+- Google 외부 브라우저 로그인 후 앱 복귀: RN 딥링크 파싱(`src/navigation/linking.ts`)은 구현 완료. Google OAuth 콘솔에서 `myballet://` redirect URI 등록 및 웹 auth callback 연동 여부 확인 필요.
+- 주소검색 세부 UX/필드 확장은 웹 저장소에서 관리한다.
