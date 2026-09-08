@@ -40,7 +40,7 @@ export const WEBVIEW_ORIGIN = BASE_WEB_URL;
  * OAuth/login related hosts that should stay inside WebView.
  * Keep this list strict to prevent opening arbitrary external websites in-app.
  */
-export const WEBVIEW_ALLOWED_HOSTS = ['myballet.co.kr', 'www.myballet.co.kr', 'appleid.apple.com'] as const;
+export const WEBVIEW_ALLOWED_HOSTS = ['myballet.co.kr', 'www.myballet.co.kr', 'appleid.apple.com', 'kakao.com'] as const;
 
 /**
  * Suffix rules for providers using multiple subdomains.
