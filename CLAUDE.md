@@ -20,7 +20,9 @@ npx tsc --noEmit          # 타입 체크 — 0 오류 유지 (변경 후 필수
 npx expo-doctor           # 설정/의존성 정합성
 
 # 빌드/배포 (EAS). production 프로필은 빌드번호 자동 증가.
-eas build  --profile production --platform all
+# ⚠️ iOS 빌드는 반드시 EXPO_NO_CAPABILITY_SYNC=1 을 붙인다.
+#    안 붙이면 EAS capability sync 단계에서 에러가 나서 iOS 빌드가 실패한다.
+EXPO_NO_CAPABILITY_SYNC=1 eas build --profile production --platform all
 eas submit --profile production --platform ios      # → TestFlight
 eas submit --profile production --platform android  # → Google Play internal 트랙
 ```
