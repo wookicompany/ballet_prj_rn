@@ -31,7 +31,7 @@ type ForegroundNotification = { title?: string; body?: string; link?: string } |
 
 // 초기 웹 로드 생애주기 상태.
 //  - loading: 아직 로드가 끝나지 않음(느린 로딩/응답 지연 포함). 고양이 로딩 화면.
-//  - failed : onError로 확정된 로드 실패/오프라인. OfflineScreen(문구+재시도).
+//  - failed : onError로 확정된 로드 실패/오프라인. OfflineScreen(문구, 자동복구).
 //  - loaded : 로드 완료. 오버레이 없이 웹 표시.
 // 초기값을 loading으로 두어, 네이티브 스플래시가 걷히는 순간 RN 고양이 뷰가 이미
 // 렌더돼 있어 흰 틈이 생기지 않는다.
@@ -183,14 +183,7 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
     setLoadStatus('loaded');
   }, []);
 
-  // reload만 트리거하고 'failed' 상태는 유지한다. 로드 성공 시 onLoad(handleLoadSuccess)
-  // 가 'loaded'로 해제하므로, 재시도/자동복구 중에도 오프라인 화면(+"연결 중" 표시)이 유지되고
-  // 성공한 순간에만 웹 화면으로 넘어가 깜빡임이 없다.
-  const handleRetry = useCallback(() => {
-    webViewRef.current?.reload();
-  }, []);
-
-  // 네트워크 복구를 감지하면, 로드 실패 상태였을 때 자동으로 reload 한다.
+  // 네트워크 복구를 감지하면, 로드 실패 상태였을 때 자동으로 reload 한다. (수동 재시도 버튼 없음)
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
       if (state.isConnected && loadFailedRef.current) {
@@ -277,7 +270,7 @@ export function WebViewScreen({ onInitialWebViewReady }: WebViewScreenProps) {
           onLoadSuccess={handleLoadSuccess}
         />
         {loadStatus === 'failed' ? (
-          <OfflineScreen onRetry={handleRetry} />
+          <OfflineScreen />
         ) : loadStatus === 'loading' ? (
           <LoadingScreen />
         ) : null}
